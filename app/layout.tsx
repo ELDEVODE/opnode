@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import WalletModalProvider from "@/components/providers/WalletModalProvider";
+import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
+import EmbeddedWalletProvider from "@/components/providers/EmbeddedWalletProvider";
+import WalletDrawerProvider from "@/components/providers/WalletDrawerProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +31,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ConvexClientProvider>
+          <EmbeddedWalletProvider>
+            <WalletModalProvider>
+              <WalletDrawerProvider>{children}</WalletDrawerProvider>
+            </WalletModalProvider>
+          </EmbeddedWalletProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );
