@@ -30,7 +30,9 @@ export default function BalanceComponent({
       try {
         const info = (await sdk.getInfo({ ensureSynced: false })) as any;
         if (!cancelled) {
-          setBalanceSats(typeof info?.balanceSats === "number" ? info.balanceSats : 0);
+          setBalanceSats(
+            typeof info?.balanceSats === "number" ? info.balanceSats : 0
+          );
         }
       } catch (err) {
         console.error("Failed to load Breez balance", err);

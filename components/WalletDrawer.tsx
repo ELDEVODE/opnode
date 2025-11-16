@@ -22,7 +22,9 @@ function CopyButton({ value }: { value?: string | null }) {
     if (!value || typeof navigator === "undefined" || !navigator.clipboard) {
       return;
     }
-    navigator.clipboard.writeText(value).catch((err) => console.error("Copy failed", err));
+    navigator.clipboard
+      .writeText(value)
+      .catch((err) => console.error("Copy failed", err));
   };
   return (
     <button
@@ -62,7 +64,9 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
       try {
         const info = (await sdk.getInfo({ ensureSynced: false })) as any;
         if (!cancelled) {
-          setBalanceSats(typeof info?.balanceSats === "number" ? info.balanceSats : 0);
+          setBalanceSats(
+            typeof info?.balanceSats === "number" ? info.balanceSats : 0
+          );
         }
       } catch (err) {
         console.error("Failed to load balance", err);
@@ -100,7 +104,9 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
       } catch (err) {
         console.error("Failed to get address", err);
         if (!cancelled) {
-          setAddressError(err instanceof Error ? err.message : "Unable to get address");
+          setAddressError(
+            err instanceof Error ? err.message : "Unable to get address"
+          );
         }
       } finally {
         if (!cancelled) {
@@ -175,7 +181,8 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
                 </p>
                 <div className="mt-2 flex items-center justify-between gap-3 font-mono text-base">
                   <span className="truncate">
-                    {depositAddress ?? (isAddressLoading ? "Generating..." : "Unavailable")}
+                    {depositAddress ??
+                      (isAddressLoading ? "Generating..." : "Unavailable")}
                   </span>
                   <CopyButton value={depositAddress} />
                 </div>

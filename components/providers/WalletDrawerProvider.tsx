@@ -37,7 +37,10 @@ export default function WalletDrawerProvider({
   const openDrawer = useCallback(() => setIsOpen(true), []);
   const closeDrawer = useCallback(() => setIsOpen(false), []);
 
-  const value = useMemo(() => ({ isOpen, openDrawer, closeDrawer }), [isOpen, openDrawer, closeDrawer]);
+  const value = useMemo(
+    () => ({ isOpen, openDrawer, closeDrawer }),
+    [isOpen, openDrawer, closeDrawer]
+  );
 
   return (
     <WalletDrawerContext.Provider value={value}>

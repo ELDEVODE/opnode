@@ -22,7 +22,9 @@ export default function Sidebar() {
   const isReady = status === "ready";
 
   const handleDisconnect = useCallback(() => {
-    disconnect().catch((err) => console.error("Failed to disconnect wallet", err));
+    disconnect().catch((err) =>
+      console.error("Failed to disconnect wallet", err)
+    );
   }, [disconnect]);
 
   return (
