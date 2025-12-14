@@ -34,9 +34,69 @@ const EmbeddedWalletContext = createContext<
   EmbeddedWalletContextValue | undefined
 >(undefined);
 
+import { ConvexHttpClient } from "convex/browser";
+
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL!;
+
 class EmbeddedSdkEventListener {
-  onEvent(event: unknown) {
-    console.debug("[Breez SDK Event]", event);
+  onEvent(breezEvent: any) {
+    console.log("Breez event:", breezEvent);
+    
+    // Show toast notification for received payments
+    if (breezEvent.type === "paymentSucceeded") {
+      const payment = breezEvent.details;
+      
+      // Check if it's an incoming payment 
+      if (payment && (payment.paymentType === "received" || payment.status === "Complete")) {
+        const amountSats = payment.amountSats || (payment.amountMsat ? payment.amountMsat / 1000 : 0);
+        const paymentHash = payment.id || payment.paymentHash || payment.hash;
+        
+        // Show toast notification
+        import("sonner").then(({ toast }) => {
+          toast.success(`⚡ Received ${Math.floor(amountSats)} sats!`, {
+            description: "Payment received successfully",
+            duration: 5000,
+          });
+        });
+        
+        console.log("✅ Incoming payment:", Math.floor(amountSats), "sats");
+        
+        // Record payment in Convex (async, non-blocking)
+        this.recordIncomingPayment(Math.floor(amountSats), paymentHash).catch(err => {
+          console.error("Failed to record incoming payment:", err);
+        });
+      }
+    }
+    
+    // Log payment events for debugging
+    if (breezEvent.type?.toLowerCase().includes("payment")) {
+      console.log("Payment event:", JSON.stringify(breezEvent, null, 2));
+    }
+  }
+  
+  async recordIncomingPayment(amountSats: number, paymentHash?: string) {
+    try {
+      // Get user ID from localStorage
+      const userId = localStorage.getItem("wallet_user_id");
+      if (!userId) {
+        console.warn("No user ID found, skipping payment recording");
+        return;
+      }
+      
+      // Create Convex client
+      const convex = new ConvexHttpClient(convexUrl);
+      
+      // Record payment in history
+      await convex.mutation(api.payments.recordIncomingPayment, {
+        userId,
+        amountSats,
+        paymentHash: paymentHash || `incoming-${Date.now()}`,
+      });
+      
+      console.log("✅ Payment recorded in history");
+    } catch (error) {
+      console.error("Error recording payment:", error);
+    }
   }
 }
 
@@ -98,9 +158,14 @@ export default function EmbeddedWalletProvider({
     async (sdk: BreezSdkInstance) => {
       await cleanupListener();
       if (typeof sdk.addEventListener === "function") {
-        listenerIdRef.current = await sdk.addEventListener(
-          new EmbeddedSdkEventListener()
-        );
+        try {
+          const listenerId = await sdk.addEventListener(
+            new EmbeddedSdkEventListener()
+          );
+          listenerIdRef.current = listenerId;
+        } catch (listenerError) {
+          console.error("Failed to attach Breez listener", listenerError);
+        }
       }
     },
     [cleanupListener]

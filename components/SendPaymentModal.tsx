@@ -222,14 +222,10 @@ export default function SendPaymentModal({
                 <span className="text-white/60">Amount:</span>
                 <span className="font-bold">{amount} sats</span>
               </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-white/60">Fees:</span>
-                <span className="font-bold">{fees} sats</span>
-              </div>
               <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
                 <span className="text-white/80 font-semibold">Total:</span>
                 <span className="font-bold text-orange-500">
-                  {parseInt(amount) + (fees || 0)} sats
+                  {parseInt(amount)} sats
                 </span>
               </div>
             </div>
