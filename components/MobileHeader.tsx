@@ -79,8 +79,8 @@ export default function MobileHeader() {
 
       <div className="w-full relative">
         <StreamFilters
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
+          selectedCategory={activeCategory}
+          onCategoryChange={(category) => setActiveCategory(category as any)}
           className="pr-12"
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-[#050505] to-transparent" />

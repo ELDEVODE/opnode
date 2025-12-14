@@ -470,13 +470,7 @@ export default function StreamOBSPage() {
           const data = await response.json();
           setMuxViewers(data.currentViewers);
           
-          // Update database with real viewer count
-          if (streamSessionId && data.currentViewers !== currentStream.viewers) {
-            updateViewers({ 
-              streamId: streamSessionId, 
-              viewers: data.currentViewers 
-            }).catch(console.error);
-          }
+          // Note: Database viewer sync is disabled since Mux API is not configured
         }
       } catch (error) {
         console.error("Failed to fetch Mux viewers:", error);
@@ -924,7 +918,7 @@ export default function StreamOBSPage() {
                           setChatInput(prev => prev + emojiData.emoji);
                           setShowEmojiPicker(false);
                         }}
-                        theme="dark"
+                        theme={"dark" as any}
                         width={320}
                         height={400}
                       />

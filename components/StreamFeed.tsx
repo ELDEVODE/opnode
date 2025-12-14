@@ -27,8 +27,8 @@ export default function StreamFeed() {
     <section className="flex flex-col gap-6">
       <div className="hidden md:block">
         <StreamFilters
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
+          selectedCategory={activeCategory}
+          onCategoryChange={(category) => setActiveCategory(category as any)}
         />
       </div>
 

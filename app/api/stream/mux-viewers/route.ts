@@ -17,24 +17,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get current viewers from Mux Data API
-    // Using the monitoring endpoint to get real-time metrics
-    const response = await mux.data.monitoring.listBreakdownValues(
-      "current-viewers",
-      {
-        filters: [`live_stream_id:${liveStreamId}`],
-        timeframe: ["1h"], // Last hour
-      }
-    );
-
-    // Get the current concurrent viewers
-    let currentViewers = 0;
-    
-    if (response.data && response.data.length > 0) {
-      // The first item contains the most recent viewer count
-      const latestData = response.data[0];
-      currentViewers = latestData.value || 0;
-    }
+    // TODO: Implement proper Mux Data API viewer tracking
+    // The listBreakdownValues method is not available in the current SDK version
+    // For now, return 0 viewers. This should be replaced with actual Mux metrics API calls
+    // using mux.data.metrics.listBreakdownValues or a similar available method
+    const currentViewers = 0;
 
     return NextResponse.json({
       currentViewers,

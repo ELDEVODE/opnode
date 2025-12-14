@@ -1186,7 +1186,7 @@ export default function StreamPage() {
 
       {/* Go Live Countdown Modal */}
       {isCountdownActive && (
-        <GoLiveCountdown onComplete={handleCountdownComplete} />
+        <GoLiveCountdown isActive={isCountdownActive} onComplete={handleCountdownComplete} />
       )}
 
       {/* Share Screen Modal */}
