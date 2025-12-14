@@ -496,8 +496,8 @@ export default function StreamPage() {
 
   return (
     <div className="h-screen bg-[#0F0F0F] text-white flex flex-col overflow-hidden">
-      {/* Desktop Navbar - only visible on lg and up */}
-      <div className="hidden lg:block sticky top-0 z-50 shrink-0">
+      {/* Navbar - visible on all devices */}
+      <div className="block sticky top-0 z-50 shrink-0">
         <Navbar />
       </div>
 

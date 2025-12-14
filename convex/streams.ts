@@ -249,3 +249,50 @@ export const getStreamStats = query({
     };
   },
 });
+
+// Reset stream for reuse - keeps Mux credentials but resets metadata
+export const resetStreamForReuse = mutation({
+  args: {
+    streamId: v.id("streams"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    tags: v.array(v.string()),
+    category: v.string(),
+    thumbnailStorageId: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    const stream = await ctx.db.get(args.streamId);
+    if (!stream) throw new Error("Stream not found");
+
+    // Reset stream data while keeping Mux credentials
+    await ctx.db.patch(args.streamId, {
+      title: args.title,
+      description: args.description,
+      tags: args.tags,
+      category: args.category,
+      thumbnailStorageId: args.thumbnailStorageId,
+      // Reset stats
+      isLive: false,
+      viewers: 0,
+      totalViews: 0,
+      totalEarnings: 0,
+      totalGifts: 0,
+      // Update timestamp
+      createdAt: Date.now(),
+      // Clear previous stream times
+      startedAt: undefined,
+      endedAt: undefined,
+      // Keep muxStreamId, muxPlaybackId, and muxStreamKey intact
+    });
+
+    return args.streamId;
+  },
+});
+
+// Get storage URL for uploaded files (thumbnails, avatars, etc.)
+export const getStorageUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});

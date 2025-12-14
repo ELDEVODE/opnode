@@ -64,7 +64,7 @@ export default function Sidebar() {
         type="button"
         onClick={handleGoLiveClick}
         disabled={isConnecting}
-        className={`w-[100px] rounded-full bg-white py-4 text-base font-semibold uppercase tracking-wide text-black shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:translate-y-px ${
+        className={`w-[100px] rounded-full bg-white py-4 text-sm font-semibold uppercase tracking-wide text-black shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:translate-y-px ${
           isConnecting ? "opacity-70" : ""
         }`}
       >

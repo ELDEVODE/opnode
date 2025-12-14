@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Disallow admin/private routes if any
+Disallow: /api/
+
+# Sitemap location
+Sitemap: {{NEXT_PUBLIC_APP_URL}}/sitemap.xml

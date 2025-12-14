@@ -35,13 +35,15 @@ export default function Navbar() {
   return (
     <div className="bg-black px-6 py-4 flex items-center gap-8 border-b border-white/5">
       {/* Logo */}
-      <Image
-        src="/images/Logo.svg"
-        alt="OPNODE LOGO"
-        width={364}
-        height={43.07}
-        className="w-auto h-8"
-      />
+      <Link href="/" className="cursor-pointer">
+        <Image
+          src="/images/Logo.svg"
+          alt="OPNODE LOGO"
+          width={364}
+          height={43.07}
+          className="w-auto h-8"
+        />
+      </Link>
 
       {/* Search Bar + Actions */}
       <div className="flex flex-1 items-center gap-3 justify-end">

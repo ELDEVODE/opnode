@@ -198,6 +198,11 @@ export default function StreamOBSPage() {
       setStreamSessionId(data.streamId);
       setMuxPlaybackId(data.muxPlaybackId);
       
+      // Show message if stream was reused
+      if (data.reused) {
+        console.log("✅ Reusing existing stream - your OBS configuration remains the same!");
+      }
+      
       // Reset viewer count to 0 when creating stream
       if (data.streamId) {
         await fetch("/api/stream/reset-viewers", {
@@ -492,7 +497,7 @@ export default function StreamOBSPage() {
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] text-white">
-      <div className="hidden lg:block sticky top-0 z-50">
+      <div className="block sticky top-0 z-50">
         <Navbar />
       </div>
 

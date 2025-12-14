@@ -11,6 +11,7 @@ import { HiOutlineGift, HiOutlineEye, HiOutlinePaperAirplane, HiOutlineFaceSmile
 import { FaBitcoin } from "react-icons/fa";
 import Navbar from "@/components/nav";
 import { useEmbeddedWallet } from "@/components/providers/EmbeddedWalletProvider";
+import { useWalletModal } from "@/components/providers/WalletModalProvider";
 import { getOrCreateWalletUserId } from "@/lib/userId";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -46,6 +47,7 @@ export default function StreamViewPage() {
   
   const { status, sdk, publicKey } = useEmbeddedWallet();
   const isWalletConnected = status === "ready";
+  const { openModal } = useWalletModal();
   
   const [chatInput, setChatInput] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
@@ -283,7 +285,7 @@ export default function StreamViewPage() {
 
   return (
     <div className="h-screen bg-[#0F0F0F] text-white flex flex-col overflow-hidden">
-      <div className="hidden lg:block sticky top-0 z-50 shrink-0">
+      <div className="block sticky top-0 z-50 shrink-0">
         <Navbar />
       </div>
 
@@ -291,7 +293,7 @@ export default function StreamViewPage() {
         {/* Video Player Section */}
         <section className="flex-1 flex flex-col gap-4 min-h-0">
           {/* Stream Header */}
-          <div className="hidden lg:flex items-center justify-between gap-4 bg-[#131316] px-6 py-4 rounded-[10px]">
+          <div className="flex items-center justify-between gap-4 bg-[#131316] px-6 py-4 rounded-none lg:rounded-[10px]">
             <div>
               <h1 className="text-xl font-bold">{stream.title}</h1>
               <div className="flex gap-2 mt-2">
@@ -338,6 +340,27 @@ export default function StreamViewPage() {
                     </div>
                   </div>
                 )}
+                
+                {/* Create Account Overlay - Shows when not connected */}
+                {!isWalletConnected && (
+                  <div className="absolute bottom-4 right-4 z-20">
+                    <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-4 shadow-2xl max-w-sm backdrop-blur-sm border border-white/10">
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">⚡</div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-white mb-1">Join the conversation!</h4>
+                          <p className="text-white/90 text-sm mb-3">Create an account to chat and send sats to the streamer.</p>
+                          <button
+                            onClick={openModal}
+                            className="w-full px-4 py-2 bg-white text-black rounded-full font-semibold text-sm hover:bg-white/90 transition"
+                          >
+                            Create Account
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="h-full flex items-center justify-center bg-[#1A1A1F]">
@@ -371,7 +394,7 @@ export default function StreamViewPage() {
         </section>
 
         {/* Chat Sidebar */}
-        <aside className="hidden lg:flex w-full lg:w-[420px] bg-[#0D0D0D] border border-white/5 rounded-[28px] overflow-hidden flex-col">
+        <aside className="flex w-full lg:w-[420px] bg-[#0D0D0D] border border-white/5 rounded-none lg:rounded-[28px] overflow-hidden flex-col">
           <div className="p-6 border-b border-white/5">
             <h2 className="text-xl font-bold">Live Chat</h2>
           </div>

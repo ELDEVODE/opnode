@@ -57,6 +57,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check if user has an existing inactive stream that can be reused
+    const existingStreams = await convex.query(api.streams.getUserStreams, {
+      userId,
+    });
+
+    // Find the most recent inactive stream with Mux credentials
+    const reusableStream = existingStreams
+      .filter((stream) => !stream.isLive && stream.muxStreamId && stream.muxPlaybackId)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+
+    if (reusableStream) {
+      // Reuse existing stream - just update the metadata
+      console.log(`Reusing stream ${reusableStream._id} for user ${userId}`);
+      
+      await convex.mutation(api.streams.resetStreamForReuse, {
+        streamId: reusableStream._id,
+        title,
+        description,
+        tags: tags || [],
+        category: category || "Live",
+        thumbnailStorageId,
+      });
+
+      return NextResponse.json({
+        success: true,
+        streamId: reusableStream._id,
+        muxStreamId: reusableStream.muxStreamId,
+        muxPlaybackId: reusableStream.muxPlaybackId,
+        reused: true, // Flag to indicate this was reused
+      });
+    }
+
+    // No reusable stream found - create a new one
+    console.log(`Creating new stream for user ${userId}`);
+
     // Create stream in Convex first
     const streamId = await convex.mutation(api.streams.createStream, {
       hostUserId: userId,
@@ -89,11 +124,12 @@ export async function POST(req: NextRequest) {
       streamId,
       muxStreamId: muxStream.streamId,
       muxPlaybackId: muxStream.playbackId,
+      reused: false,
       // Note: We don't return the stream key to the client for security
       // The client will need to request it separately if needed
     });
   } catch (error) {
-    console.error("Error creating stream:", error);
+    console.error("Error creating/reusing stream:", error);
     return NextResponse.json(
       { error: "Failed to create stream" },
       { status: 500 }
