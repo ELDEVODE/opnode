@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import WalletModalProvider from "@/components/providers/WalletModalProvider";
+import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
+import EmbeddedWalletProvider from "@/components/providers/EmbeddedWalletProvider";
+import WalletDrawerProvider from "@/components/providers/WalletDrawerProvider";
+import { NotificationPanelProvider } from "@/components/providers/NotificationPanelProvider";
+import NotificationsPanel from "@/components/NotificationsPanel";
+import { PrepStreamProvider } from "@/components/providers/PrepStreamProvider";
+import { CameraPermissionsProvider } from "@/components/providers/CameraPermissionsProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +34,24 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
-        {children}
+        <ConvexClientProvider>
+          <EmbeddedWalletProvider>
+            <WalletModalProvider>
+              <WalletDrawerProvider>
+                <NotificationPanelProvider>
+                  <PrepStreamProvider>
+                    <CameraPermissionsProvider>
+                      {children}
+                      <NotificationsPanel />
+                    </CameraPermissionsProvider>
+                  </PrepStreamProvider>
+                </NotificationPanelProvider>
+              </WalletDrawerProvider>
+            </WalletModalProvider>
+          </EmbeddedWalletProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );
