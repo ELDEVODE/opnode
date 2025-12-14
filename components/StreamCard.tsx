@@ -86,9 +86,9 @@ export default function StreamCard({ stream }: StreamCardProps) {
         <div className="flex flex-1 flex-col gap-3 px-1">
           <div className="flex flex-1 items-start gap-3">
             <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-[#FFB347] ring-offset-2">
-              {hostProfile && !hostProfile.avatarUrl ? (
+              {!streamData.hostAvatar || streamData.hostAvatar === "/images/avatar1.png" ? (
                 <div className="w-full h-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
-                  {hostProfile.username?.charAt(0).toUpperCase() || "U"}
+                  {streamData.host?.charAt(0).toUpperCase() || "U"}
                 </div>
               ) : (
                 <Image
@@ -97,6 +97,7 @@ export default function StreamCard({ stream }: StreamCardProps) {
                   fill
                   className="object-cover"
                   sizes="48px"
+                  unoptimized
                 />
               )}
             </div>
