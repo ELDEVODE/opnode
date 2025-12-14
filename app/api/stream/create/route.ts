@@ -50,7 +50,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { userId, title, description, tags, category, thumbnailStorageId } = body;
 
+    console.log("Stream creation request:", { userId, title, category });
+
     if (!userId || !title) {
+      console.error("Missing required fields:", { userId: !!userId, title: !!title });
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -58,39 +61,53 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has an existing inactive stream that can be reused
-    const existingStreams = await convex.query(api.streams.getUserStreams, {
-      userId,
-    });
+    let existingStreams: any[] = [];
+    try {
+      existingStreams = await convex.query(api.streams.getUserStreams, {
+        userId,
+      });
+      console.log(`Found ${existingStreams?.length || 0} existing streams for user`);
+    } catch (error) {
+      console.error("Error fetching existing streams:", error);
+      existingStreams = [];
+    }
 
     // Find the most recent inactive stream with Mux credentials
-    const reusableStream = existingStreams
-      .filter((stream) => !stream.isLive && stream.muxStreamId && stream.muxPlaybackId)
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+    const reusableStream = existingStreams && Array.isArray(existingStreams)
+      ? existingStreams
+          .filter((stream) => !stream.isLive && stream.muxStreamId && stream.muxPlaybackId)
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0]
+      : null;
 
     if (reusableStream) {
       // Reuse existing stream - just update the metadata
-      console.log(`Reusing stream ${reusableStream._id} for user ${userId}`);
+      console.log(`✅ Reusing stream ${reusableStream._id} for user ${userId}`);
       
-      await convex.mutation(api.streams.resetStreamForReuse, {
-        streamId: reusableStream._id,
-        title,
-        description,
-        tags: tags || [],
-        category: category || "Live",
-        thumbnailStorageId,
-      });
+      try {
+        await convex.mutation(api.streams.resetStreamForReuse, {
+          streamId: reusableStream._id,
+          title,
+          description,
+          tags: tags || [],
+          category: category || "Live",
+          thumbnailStorageId,
+        });
 
-      return NextResponse.json({
-        success: true,
-        streamId: reusableStream._id,
-        muxStreamId: reusableStream.muxStreamId,
-        muxPlaybackId: reusableStream.muxPlaybackId,
-        reused: true, // Flag to indicate this was reused
-      });
+        return NextResponse.json({
+          success: true,
+          streamId: reusableStream._id,
+          muxStreamId: reusableStream.muxStreamId,
+          muxPlaybackId: reusableStream.muxPlaybackId,
+          reused: true,
+        });
+      } catch (error) {
+        console.error("Error reusing stream:", error);
+        // Fall through to create new stream
+      }
     }
 
     // No reusable stream found - create a new one
-    console.log(`Creating new stream for user ${userId}`);
+    console.log(`📺 Creating new stream for user ${userId}`);
 
     // Create stream in Convex first
     const streamId = await convex.mutation(api.streams.createStream, {
@@ -102,11 +119,15 @@ export async function POST(req: NextRequest) {
       thumbnailStorageId,
     });
 
+    console.log(`Created Convex stream: ${streamId}`);
+
     // Create Mux live stream
     const muxStream = await createLiveStream({
       reconnectWindow: 60,
       reducedLatency: true,
     });
+
+    console.log(`Created Mux stream: ${muxStream.streamId}`);
 
     // Encrypt the stream key before storing
     const encryptedStreamKey = await encryptSecret(muxStream.streamKey);
@@ -119,19 +140,23 @@ export async function POST(req: NextRequest) {
       muxStreamKey: encryptedStreamKey,
     });
 
+    console.log(`✅ Stream created successfully: ${streamId}`);
+
     return NextResponse.json({
       success: true,
       streamId,
       muxStreamId: muxStream.streamId,
       muxPlaybackId: muxStream.playbackId,
       reused: false,
-      // Note: We don't return the stream key to the client for security
-      // The client will need to request it separately if needed
     });
   } catch (error) {
-    console.error("Error creating/reusing stream:", error);
+    console.error("❌ Error creating/reusing stream:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to create stream" },
+      { 
+        error: "Failed to create stream",
+        details: errorMessage,
+      },
       { status: 500 }
     );
   }

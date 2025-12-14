@@ -64,15 +64,15 @@ export default function Sidebar() {
         type="button"
         onClick={handleGoLiveClick}
         disabled={isConnecting}
-        className={`w-[100px] rounded-full bg-white py-4 text-sm font-semibold uppercase tracking-wide text-black shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:translate-y-px ${
-          isConnecting ? "opacity-70" : ""
+        className={`w-full rounded-full bg-white py-4 px-6 text-[15px] font-bold uppercase tracking-wide text-black shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all hover:bg-gray-100 hover:scale-105 active:scale-95 ${
+          isConnecting ? "opacity-70 cursor-not-allowed" : ""
         }`}
       >
         {isConnecting
           ? "Connecting..."
           : isReady
-            ? "Go live"
-            : "Connect Wallet"}
+            ? "Go Live"
+            : "Connect"}
       </button>
 
       <nav className="mt-12 flex flex-col items-center gap-6">

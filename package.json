@@ -8,7 +8,6 @@
     "start": "next start"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "^0.4.2",
     "@mux/mux-node": "^12.8.1",
     "@mux/mux-player-react": "^3.10.1",
     "@scure/bip39": "^2.0.1",
@@ -18,6 +17,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-icons": "^5.5.0",
+    "sonner": "^2.0.7",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

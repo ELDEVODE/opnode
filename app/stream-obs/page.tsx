@@ -8,6 +8,7 @@ import { useEmbeddedWallet } from "@/components/providers/EmbeddedWalletProvider
 import { usePrepStream } from "@/components/providers/PrepStreamProvider";
 import { getOrCreateWalletUserId } from "@/lib/userId";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import {
@@ -231,7 +232,7 @@ export default function StreamOBSPage() {
       console.log("Stream session created:", data);
     } catch (error) {
       console.error("Error creating stream:", error);
-      alert("Failed to create stream. Please try again.");
+      toast.error("Failed to create stream. Please try again.");
     } finally {
       setIsCreatingStream(false);
     }
@@ -323,7 +324,7 @@ export default function StreamOBSPage() {
       }, 500);
     } catch (error) {
       console.error("Error ending stream:", error);
-      alert("Failed to end stream. Please try again.");
+      toast.error("Failed to end stream. Please try again.");
     }
   };
 

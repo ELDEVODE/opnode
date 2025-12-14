@@ -56,9 +56,15 @@ export default function ConnectWalletModal({
     if (typeof window !== "undefined") {
       setUserId(getOrCreateWalletUserId());
     }
-  }, []);
+  }, [])
 
-  // Mutation to create profile
+  // Fetch wallet profile to get mnemonic
+  const walletProfile = useQuery(
+    api.wallets.getProfile,
+    userId ? { userId } : "skip"
+  );
+
+  // Mutation to create profile\n
   const createProfile = useMutation(api.users.upsertProfile);
   const ensureProfile = useMutation(api.users.ensureProfile);
 
@@ -230,7 +236,10 @@ export default function ConnectWalletModal({
         case "success":
           return (
             <div className="flex flex-col h-full">
-              <WalletSuccessModal onCreateProfile={() => setStep("username")} />
+              <WalletSuccessModal 
+                mnemonic={walletProfile?.mnemonic}
+                onCreateProfile={() => setStep("username")} 
+              />
               <button
                 onClick={() => {
                   resetModal();
@@ -283,7 +292,10 @@ export default function ConnectWalletModal({
         default:
           // Fallback for "connect" or any other step when ready
           return (
-            <WalletSuccessModal onCreateProfile={() => setStep("username")} />
+            <WalletSuccessModal 
+              mnemonic={walletProfile?.mnemonic}
+              onCreateProfile={() => setStep("username")} 
+            />
           );
       }
     }

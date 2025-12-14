@@ -10,6 +10,7 @@ import { useWalletModal } from "@/components/providers/WalletModalProvider";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getOrCreateWalletUserId } from "@/lib/userId";
+import { toast } from "sonner";
 
 type WalletDrawerProps = {
   isOpen: boolean;
@@ -115,6 +116,31 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
     }
   };
 
+  const handleReceive = async () => {
+    if (!isReady || !sdk) {
+      toast.error("Wallet not ready");
+      return;
+    }
+
+    try {
+      // Get the node info which includes the node ID
+      const nodeInfo = (await sdk.getInfo({ ensureSynced: false })) as any;
+      
+      if (nodeInfo?.nodeId) {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(nodeInfo.nodeId);
+        toast.success("Lightning address copied to clipboard!", {
+          description: nodeInfo.nodeId.substring(0, 20) + "...",
+        });
+      } else {
+        toast.error("Could not retrieve Lightning address");
+      }
+    } catch (error) {
+      console.error("Error getting Lightning address:", error);
+      toast.error("Failed to copy address");
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex justify-end">
       <div
@@ -170,7 +196,10 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
               <button className="flex-1 rounded-full bg-[#FF9100] py-4 text-base font-bold text-black transition hover:brightness-110">
                 Send
               </button>
-              <button className="flex-1 rounded-full border border-white/10 bg-[#2C2C35] py-4 text-base font-bold text-white transition hover:bg-[#3A3A42]">
+              <button 
+                onClick={handleReceive}
+                className="flex-1 rounded-full border border-white/10 bg-[#2C2C35] py-4 text-base font-bold text-white transition hover:bg-[#3A3A42]"
+              >
                 Receive
               </button>
             </div>

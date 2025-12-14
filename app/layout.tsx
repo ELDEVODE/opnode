@@ -9,6 +9,8 @@ import { NotificationPanelProvider } from "@/components/providers/NotificationPa
 import NotificationsPanel from "@/components/NotificationsPanel";
 import { PrepStreamProvider } from "@/components/providers/PrepStreamProvider";
 import { CameraPermissionsProvider } from "@/components/providers/CameraPermissionsProvider";
+import { Toaster } from "sonner";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -112,6 +114,7 @@ export default function RootLayout({
             </WalletModalProvider>
           </EmbeddedWalletProvider>
         </ConvexClientProvider>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
