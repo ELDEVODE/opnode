@@ -1,30 +1,11 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
 import ConnectWalletModal from "@/components/ConnectWalletModal";
-
-type WalletModalContextValue = {
-  isOpen: boolean;
-  openModal: () => void;
-  closeModal: () => void;
-};
-
-const WalletModalContext = createContext<WalletModalContextValue | undefined>(
-  undefined
-);
+import { useWalletModalStore } from "@/stores/walletModalStore";
 
 export function useWalletModal() {
-  const context = useContext(WalletModalContext);
-  if (!context) {
-    throw new Error("useWalletModal must be used within WalletModalProvider");
-  }
-  return context;
+  const { isOpen, openModal, closeModal } = useWalletModalStore();
+  return { isOpen, openModal, closeModal };
 }
 
 export default function WalletModalProvider({
@@ -32,20 +13,15 @@ export default function WalletModalProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const openModal = useCallback(() => setIsOpen(true), []);
-  const closeModal = useCallback(() => setIsOpen(false), []);
-
-  const value = useMemo(
-    () => ({ isOpen, openModal, closeModal }),
-    [isOpen, openModal, closeModal]
-  );
+  const { isOpen, closeModal } = useWalletModalStore();
 
   return (
-    <WalletModalContext.Provider value={value}>
+    <>
       {children}
-      <ConnectWalletModal isOpen={isOpen} onClose={closeModal} />
-    </WalletModalContext.Provider>
+      <ConnectWalletModal
+        isOpen={isOpen}
+        onClose={closeModal}
+      />
+    </>
   );
 }

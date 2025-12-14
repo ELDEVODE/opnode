@@ -62,50 +62,52 @@ export default function BalanceComponent({
     <section
       className={`flex h-full w-full flex-col gap-8 rounded-4xl bg-[#1F1F25] px-8 py-10 text-white shadow-[0_25px_45px_rgba(0,0,0,0.45)] ${className}`}
     >
-      <header className="flex items-center justify-between text-[16px] font-semibold uppercase tracking-widest text-[#A2A2B0]">
+      <header className="mb-2 text-[13px] font-semibold uppercase tracking-widest text-[#A2A2B0]">
         <span>BALANCE</span>
       </header>
 
-      <div className="flex items-center justify-between gap-6">
-        <div className="flex items-center">
-          <TbCoinBitcoinFilled
-            color="#FD9535"
-            className="h-7 w-7 text-[#FD9535]"
-          />
-          <p className="ml-2 text-[56px] font-semibold leading-none sm:text-6xl">
-            {formattedBalance}
-          </p>
+      <div className="flex flex-1 flex-col justify-center min-h-[60px]">
+        <div className="flex items-center gap-3">
+          <TbCoinBitcoinFilled className="h-8 w-8 text-[#FF9533] shrink-0" />
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <span className="text-[56px] font-bold leading-none text-white tracking-tight">
+              {isConnected ? (balanceSats !== null ? balanceSats.toLocaleString() : "...") : "0"}
+            </span>
+            <span className="text-[40px] font-medium leading-none text-white">sats</span>
+            {isConnected && balanceSats !== null && (<span className="text-xl font-medium text-[#FF9533] ml-1">
+                ~${((balanceSats / 100_000_000) * 45000).toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
-
-        <span className="text-right text-sm font-medium uppercase tracking-[0.2em] text-[#FF9533]">
-          {isConnected ? "Wallet Live" : "Wallet Offline"}
-        </span>
       </div>
 
-      {isConnected ? (
-        <div className="mt-2 grid grid-cols-2 gap-3">
+      <div className="mt-auto w-full pt-6">
+        {isConnected ? (
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              className="rounded-full bg-[#FF9533] py-4 text-center text-[15px] font-bold text-black shadow-lg transition hover:brightness-110"
+              type="button"
+            >
+              Buy BTC
+            </button>
+            <button
+              className="rounded-full border border-white/10 bg-[#2C2C35] py-4 text-center text-[15px] font-bold text-white transition hover:bg-[#3A3A42]"
+              type="button"
+            >
+              Withdraw
+            </button>
+          </div>
+        ) : (
           <button
-            className="rounded-3xl bg-[#FF9533] py-3 text-center text-lg font-semibold text-black shadow-[0_10px_25px_rgba(0,0,0,0.35)] transition hover:translate-y-px"
+            className="w-full rounded-full bg-white py-4 text-[15px] font-bold text-black shadow-lg transition hover:brightness-90"
             type="button"
+            onClick={openModal}
           >
-            Buy BTC
+            Connect Wallet
           </button>
-          <button
-            className="rounded-3xl border border-white/20 py-3 text-center text-lg font-semibold text-white transition hover:translate-y-px"
-            type="button"
-          >
-            Withdraw
-          </button>
-        </div>
-      ) : (
-        <button
-          className="mt-2 w-full rounded-full bg-white py-4 text-lg font-semibold text-black shadow-[0_15px_35px_rgba(0,0,0,0.25)] transition hover:translate-y-px"
-          type="button"
-          onClick={openModal}
-        >
-          Connect Wallet
-        </button>
-      )}
+        )}
+      </div>
     </section>
   );
 }

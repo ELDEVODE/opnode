@@ -1,6 +1,5 @@
-import Image from "next/image";
-import Navbar from "@/components/nav";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return <>OPNODE</>;
+export default function HomePage() {
+  redirect("/dashboard");
 }

@@ -8,6 +8,13 @@
  * @module
  */
 
+import type * as chat from "../chat.js";
+import type * as http from "../http.js";
+import type * as moderation from "../moderation.js";
+import type * as payments from "../payments.js";
+import type * as settings from "../settings.js";
+import type * as streams from "../streams.js";
+import type * as users from "../users.js";
 import type * as wallets from "../wallets.js";
 
 import type {
@@ -17,6 +24,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  chat: typeof chat;
+  http: typeof http;
+  moderation: typeof moderation;
+  payments: typeof payments;
+  settings: typeof settings;
+  streams: typeof streams;
+  users: typeof users;
   wallets: typeof wallets;
 }>;
 
