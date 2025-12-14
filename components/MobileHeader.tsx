@@ -8,13 +8,36 @@ import { useEmbeddedWallet } from "@/components/providers/EmbeddedWalletProvider
 import { useNotificationPanel } from "@/components/providers/NotificationPanelProvider";
 import StreamFilters from "@/components/StreamFilters";
 import { useStreamFeedStore } from "@/stores/streamFeedStore";
+import { useState, useEffect } from "react";
 
 export default function MobileHeader() {
   const { openModal } = useWalletModal();
-  const { status } = useEmbeddedWallet();
+  const { status, sdk } = useEmbeddedWallet();
   const { openPanel } = useNotificationPanel();
   const isReady = status === "ready";
   const { activeCategory, setActiveCategory } = useStreamFeedStore();
+  
+  const [balanceSats, setBalanceSats] = useState<number | null>(null);
+
+  // Fetch balance when wallet isready
+  useEffect(() => {
+    if (!sdk || !isReady) {
+      setBalanceSats(null);
+      return;
+    }
+
+    const loadBalance = async () => {
+      try {
+        const info = (await sdk.getInfo({ ensureSynced: false })) as any;
+        setBalanceSats(typeof info?.balanceSats === "number" ? info.balanceSats : 0);
+      } catch (err) {
+        console.error("Failed to load balance:", err);
+        setBalanceSats(0);
+      }
+    };
+
+    loadBalance();
+  }, [sdk, isReady]);
 
   return (
     <header className="flex flex-col gap-6 px-4 py-6 md:hidden">
@@ -37,7 +60,9 @@ export default function MobileHeader() {
                 <FaBitcoin />
               </span>
               <span className="uppercase text-[#A0A0A8] mr-1">Balance</span>
-              <span className="text-white">79,329 sats</span>
+              <span className="text-white">
+                {balanceSats !== null ? balanceSats.toLocaleString() : "..."} sats
+              </span>
             </div>
           ) : (
             <button

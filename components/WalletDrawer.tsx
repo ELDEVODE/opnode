@@ -11,6 +11,8 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getOrCreateWalletUserId } from "@/lib/userId";
 import { toast } from "sonner";
+import SendPaymentModal from "@/components/SendPaymentModal";
+import ReceivePaymentModal from "@/components/ReceivePaymentModal";
 
 type WalletDrawerProps = {
   isOpen: boolean;
@@ -21,6 +23,8 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
   const { status, sdk } = useEmbeddedWallet();
   const { openModal } = useWalletModal();
   const [balanceSats, setBalanceSats] = useState<number | null>(null);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
 
   const isReady = status === "ready" && !!sdk;
   
@@ -116,31 +120,6 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
     }
   };
 
-  const handleReceive = async () => {
-    if (!isReady || !sdk) {
-      toast.error("Wallet not ready");
-      return;
-    }
-
-    try {
-      // Get the node info which includes the node ID
-      const nodeInfo = (await sdk.getInfo({ ensureSynced: false })) as any;
-      
-      if (nodeInfo?.nodeId) {
-        // Copy to clipboard
-        await navigator.clipboard.writeText(nodeInfo.nodeId);
-        toast.success("Lightning address copied to clipboard!", {
-          description: nodeInfo.nodeId.substring(0, 20) + "...",
-        });
-      } else {
-        toast.error("Could not retrieve Lightning address");
-      }
-    } catch (error) {
-      console.error("Error getting Lightning address:", error);
-      toast.error("Failed to copy address");
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-[60] flex justify-end">
       <div
@@ -193,11 +172,14 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
             </p>
 
             <div className="flex gap-4">
-              <button className="flex-1 rounded-full bg-[#FF9100] py-4 text-base font-bold text-black transition hover:brightness-110">
+              <button 
+                onClick={() => setShowSendModal(true)}
+                className="flex-1 rounded-full bg-[#FF9100] py-4 text-base font-bold text-black transition hover:brightness-110"
+              >
                 Send
               </button>
               <button 
-                onClick={handleReceive}
+                onClick={() => setShowReceiveModal(true)}
                 className="flex-1 rounded-full border border-white/10 bg-[#2C2C35] py-4 text-base font-bold text-white transition hover:bg-[#3A3A42]"
               >
                 Receive
@@ -265,6 +247,10 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
           </div>
         </div>
       </section>
+
+      {/* Payment Modals */}
+      <SendPaymentModal isOpen={showSendModal} onClose={() => setShowSendModal(false)} />
+      <ReceivePaymentModal isOpen={showReceiveModal} onClose={() => setShowReceiveModal(false)} />
     </div>
   );
 }

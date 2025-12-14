@@ -86,6 +86,7 @@ export default defineSchema({
     following: v.number(),
     totalEarnings: v.number(), // in sats
     isVerified: v.boolean(),
+    lightningAddress: v.optional(v.string()), // username@domain.com
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"])
@@ -121,12 +122,15 @@ export default defineSchema({
     userId: v.string(),
     type: v.string(), // "received" | "sent" | "withdrawal"
     amountSats: v.number(),
+    paymentRequest: v.optional(v.string()), // BOLT11, Lightning address, etc.
     relatedStreamId: v.optional(v.id("streams")),
     relatedGiftId: v.optional(v.id("gifts")),
     paymentHash: v.optional(v.string()),
     status: v.string(), // "pending" | "completed" | "failed"
     timestamp: v.number(),
-  }).index("by_user", ["userId", "timestamp"]),
+  })
+    .index("by_user", ["userId", "timestamp"])
+    .index("by_paymentHash", ["paymentHash"]),
 
   // Stream settings (persisted per user)
   streamSettings: defineTable({

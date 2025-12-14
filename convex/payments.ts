@@ -26,6 +26,43 @@ export const recordPayment = mutation({
   },
 });
 
+// Create a pending payment (before sending)
+export const createPendingPayment = mutation({
+  args: {
+    userId: v.string(),
+    type: v.string(),
+    amountSats: v.number(),
+    paymentRequest: v.optional(v.string()),
+    relatedStreamId: v.optional(v.id("streams")),
+    relatedGiftId: v.optional(v.id("gifts")),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("paymentHistory", {
+      userId: args.userId,
+      type: args.type,
+      amountSats: args.amountSats,
+      paymentRequest: args.paymentRequest,
+      relatedStreamId: args.relatedStreamId,
+      relatedGiftId: args.relatedGiftId,
+      status: "pending",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+// Update payment with hash after sending
+export const updatePaymentWithHash = mutation({
+  args: {
+    paymentId: v.id("paymentHistory"),
+    paymentHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.paymentId, {
+      paymentHash: args.paymentHash,
+    });
+  },
+});
+
 // Update payment status
 export const updatePaymentStatus = mutation({
   args: {
@@ -53,6 +90,53 @@ export const getPaymentHistory = query({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
+  },
+});
+
+// Get payment by hash
+export const getPaymentByHash = query({
+  args: { paymentHash: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("paymentHistory")
+      .withIndex("by_paymentHash", (q) => q.eq("paymentHash", args.paymentHash))
+      .first();
+  },
+});
+
+// Record incoming payment (received)
+export const recordIncomingPayment = mutation({
+  args: {
+    userId: v.string(),
+    amountSats: v.number(),
+    paymentHash: v.string(),
+    relatedStreamId: v.optional(v.id("streams")),
+  },
+  handler: async (ctx, args) => {
+    // Check if payment already exists
+    const existing = await ctx.db
+      .query("paymentHistory")
+      .withIndex("by_paymentHash", (q) => q.eq("paymentHash", args.paymentHash))
+      .first();
+
+    if (existing) {
+      // Update status if it was pending
+      if (existing.status === "pending") {
+        await ctx.db.patch(existing._id, { status: "completed" });
+      }
+      return existing._id;
+    }
+
+    // Create new payment record
+    return await ctx.db.insert("paymentHistory", {
+      userId: args.userId,
+      type: "received",
+      amountSats: args.amountSats,
+      paymentHash: args.paymentHash,
+      relatedStreamId: args.relatedStreamId,
+      status: "completed",
+      timestamp: Date.now(),
+    });
   },
 });
 

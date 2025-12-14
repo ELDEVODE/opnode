@@ -3,6 +3,7 @@
 import { TbCoinBitcoinFilled } from "react-icons/tb";
 import { useWalletModal } from "@/components/providers/WalletModalProvider";
 import { useEmbeddedWallet } from "@/components/providers/EmbeddedWalletProvider";
+import { useWalletDrawer } from "@/components/providers/WalletDrawerProvider";
 import { useEffect, useMemo, useState } from "react";
 
 type BalanceComponentProps = {
@@ -14,6 +15,7 @@ export default function BalanceComponent({
 }: BalanceComponentProps) {
   const { openModal } = useWalletModal();
   const { status, sdk } = useEmbeddedWallet();
+  const { openDrawer } = useWalletDrawer();
 
   const [balanceSats, setBalanceSats] = useState<number | null>(null);
 
@@ -88,14 +90,16 @@ export default function BalanceComponent({
             <button
               className="rounded-full bg-[#FF9533] py-4 text-center text-[15px] font-bold text-black shadow-lg transition hover:brightness-110"
               type="button"
+              onClick={openDrawer}
             >
-              Buy BTC
+              Receive
             </button>
             <button
               className="rounded-full border border-white/10 bg-[#2C2C35] py-4 text-center text-[15px] font-bold text-white transition hover:bg-[#3A3A42]"
               type="button"
+              onClick={openDrawer}
             >
-              Withdraw
+              Send
             </button>
           </div>
         ) : (

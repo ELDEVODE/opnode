@@ -35,6 +35,7 @@ async function loadBreezWebSdk() {
 
 export type BreezSdkInstance = Awaited<ReturnType<typeof buildBreezSdk>>;
 
+// Export for server-side use (API routes)
 export async function buildBreezSdk(mnemonic: string) {
   if (!breezApiKey) {
     throw new Error(
@@ -52,4 +53,111 @@ export async function buildBreezSdk(mnemonic: string) {
   builder = await builder.withDefaultStorage("OPNodeEmbeddedWallet");
 
   return builder.build();
+}
+
+// Payment helper functions
+
+/**
+ * Parse payment input (BOLT11, Lightning address, BTC address, etc.)
+ */
+export async function parsePaymentInput(sdk: BreezSdkInstance, input: string) {
+  try {
+    return await sdk.parse(input);
+  } catch (error) {
+    console.error("Failed to parse payment input:", error);
+    throw new Error("Invalid payment request");
+  }
+}
+
+/**
+ * Prepare a payment (BOLT11, Bitcoin address, Spark address, etc.)
+ */
+export async function prepareSendPayment(
+  sdk: BreezSdkInstance,
+  paymentRequest: string,
+  amountSats?: bigint
+) {
+  try {
+    return await sdk.prepareSendPayment({
+      paymentRequest,
+      amount: amountSats,
+    });
+  } catch (error) {
+    console.error("Failed to prepare payment:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send a payment
+ */
+export async function sendPayment(
+  sdk: BreezSdkInstance,
+  prepareResponse: any,
+  options?: any,
+  idempotencyKey?: string
+) {
+  try {
+    return await sdk.sendPayment({
+      prepareResponse,
+      options,
+      idempotencyKey,
+    });
+  } catch (error) {
+    console.error("Failed to send payment:", error);
+    throw error;
+  }
+}
+
+/**
+ * Prepare LNURL-Pay payment
+ */
+export async function prepareLnurlPay(
+  sdk: BreezSdkInstance,
+  amountSats: number,
+  payRequest: any,
+  comment?: string
+) {
+  try {
+    return await sdk.prepareLnurlPay({
+      amountSats,
+      payRequest,
+      comment,
+      validateSuccessActionUrl: true,
+    });
+  } catch (error) {
+    console.error("Failed to prepare LNURL payment:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send LNURL-Pay payment
+ */
+export async function lnurlPay(
+  sdk: BreezSdkInstance,
+  prepareResponse: any,
+  idempotencyKey?: string
+) {
+  try {
+    return await sdk.lnurlPay({
+      prepareResponse,
+      idempotencyKey,
+    });
+  } catch (error) {
+    console.error("Failed to send LNURL payment:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get node info (includes Lightning address components)
+ */
+export async function getNodeInfo(sdk: BreezSdkInstance) {
+  try {
+    return await sdk.getInfo({ ensureSynced: false });
+  } catch (error) {
+    console.error("Failed to get node info:", error);
+    throw error;
+  }
 }

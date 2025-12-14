@@ -15,6 +15,8 @@ import { useWalletModal } from "@/components/providers/WalletModalProvider";
 import { getOrCreateWalletUserId } from "@/lib/userId";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { toast } from "sonner";
+
 
 // Dynamic import for emoji picker (client-side only)
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
@@ -196,30 +198,59 @@ export default function StreamViewPage() {
     let giftId: any = null;
     
     try {
-      console.log("Sending Lightning payment:", { 
+      console.log("Sending Lightning gift:", { 
         amount: giftAmount, 
         toUser: stream.hostUserId,
-        toPublicKey: hostProfile?.publicKey || hostWallet?.publicKey
       });
       
-      // Get recipient's public key (node ID)
-      const recipientPubkey = hostProfile?.publicKey || hostWallet?.publicKey;
+      // Step 1: Generate invoice from streamer's wallet (server-side)
+      toast.info("Preparing gift payment...");
       
-      if (!recipientPubkey) {
-        throw new Error("Recipient public key not found");
+      const invoiceResponse = await fetch("/api/generate-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: stream.hostUserId,
+          amountSats: giftAmount,
+        }),
+      });
+
+      if (!invoiceResponse.ok) {
+        const error = await invoiceResponse.json();
+        throw new Error(error.error || "Failed to generate invoice");
       }
+
+      const { invoice } = await invoiceResponse.json();
+      console.log("Generated invoice for streamer:", invoice);
+
+      // Step 2: Parse and prepare payment
+      const parsed = await sdk.parse(invoice);
+      console.log("Parsed invoice:", parsed);
+
+      if (parsed.type !== "bolt11Invoice") {
+        throw new Error("Invalid invoice type");
+      }
+
+      // Step 3: Prepare payment
+      toast.info(`Sending ${giftAmount} sats as a gift...`);
       
-      // TODO: Implement proper Lightning payment using Breez SDK
-      // The sendSpontaneousPayment method doesn't exist in the current SDK version
-      // Need to research the correct method for sending keysend/spontaneous payments
+      const prepareResponse = await sdk.prepareSendPayment({
+        paymentRequest: invoice,
+      });
+
+      console.log("Payment prepared:", prepareResponse);
+
+      // Step 4: Send the payment
+      const paymentResult = await sdk.sendPayment({
+        prepareResponse,
+      });
+
+      const payment = paymentResult.payment as any;
+      const paymentHash = payment.id || payment.paymentHash || payment.hash;
       
-      // Temporary: Just create the gift record without actual payment
-      console.warn("Lightning payment not implemented yet - using mock payment");
-      const paymentResult = {
-        paymentHash: `mock_${Date.now()}_${Math.random().toString(36).substring(7)}`
-      };
-      
-      // Create gift record with mock payment hash
+      console.log("Payment sent successfully:", paymentResult);
+
+      // Step 5: Create gift record with real payment hash
       giftId = await sendGift({
         streamId,
         fromUserId: userId!,
@@ -227,8 +258,9 @@ export default function StreamViewPage() {
         toUserId: stream.hostUserId,
         amountSats: giftAmount,
         giftType: "gift",
-        paymentHash: (paymentResult as any).payment?.hash || (paymentResult as any).paymentHash,
+        paymentHash,
       });
+
       
       // Update gift status to completed
       if (giftId) {
