@@ -5,7 +5,6 @@ import { useWalletModal } from "@/components/providers/WalletModalProvider";
 import { useEmbeddedWallet } from "@/components/providers/EmbeddedWalletProvider";
 import { useWalletDrawer } from "@/components/providers/WalletDrawerProvider";
 import { useEffect, useMemo, useState } from "react";
-import { useBitcoinPrice, satsToUSD } from "@/hooks/useBitcoinPrice";
 
 type BalanceComponentProps = {
   className?: string;
@@ -17,66 +16,68 @@ export default function BalanceComponent({
   const { openModal } = useWalletModal();
   const { status, sdk } = useEmbeddedWallet();
   const { openDrawer } = useWalletDrawer();
-  const { btcPrice } = useBitcoinPrice();
 
   const [balanceSats, setBalanceSats] = useState<number | null>(null);
 
-  const isConnected = status === "ready";
+  const isConnected = status === "ready" && !!sdk;
 
-  // Fetch balance
   useEffect(() => {
-    if (!sdk || status !== "ready") {
+    let cancelled = false;
+    if (!isConnected || !sdk) {
       setBalanceSats(null);
       return;
     }
 
-    const fetchBalance = async () => {
+    const loadBalance = async () => {
       try {
-        const info = await sdk.getInfo({ ensureSynced: false });
-        const balanceMsat = info.balanceSats || 0;
-        setBalanceSats(balanceMsat);
-      } catch (error) {
-        console.error("Failed to fetch balance:", error);
+        const info = (await sdk.getInfo({ ensureSynced: false })) as any;
+        if (!cancelled) {
+          setBalanceSats(
+            typeof info?.balanceSats === "number" ? info.balanceSats : 0
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load Breez balance", err);
+        if (!cancelled) {
+          setBalanceSats(0);
+        }
       }
     };
 
-    fetchBalance();
-
-    // Refresh balance every 10 seconds
-    const interval = setInterval(fetchBalance, 10000);
-
-    return () => clearInterval(interval);
-  }, [sdk, status]);
+    loadBalance();
+    return () => {
+      cancelled = true;
+    };
+  }, [isConnected, sdk]);
 
   const formattedBalance = useMemo(() => {
-    if (balanceSats === null) return "---";
-    return balanceSats.toLocaleString();
-  }, [balanceSats]);
-
-  const usdBalance = useMemo(() => {
-    if (balanceSats === null || !btcPrice) return null;
-    return satsToUSD(balanceSats, btcPrice);
-  }, [balanceSats, btcPrice]);
+    if (!isConnected) {
+      return "0 sats";
+    }
+    if (balanceSats == null) {
+      return "Syncing...";
+    }
+    return `${balanceSats.toLocaleString()} sats`;
+  }, [balanceSats, isConnected]);
 
   return (
-    <section className={className}>
-      <div className="flex h-full w-full flex-col gap-6 rounded-2xl bg-[#0B0B10]/60 px-6 py-5 text-white shadow-[0_8px_45px_rgba(241,242,245,0.08)]">
-        <p className="text-sm font-semibold text-white/70">Balance</p>
+    <section
+      className={`flex h-full w-full flex-col gap-8 rounded-4xl bg-[#1F1F25] px-8 py-10 text-white shadow-[0_25px_45px_rgba(0,0,0,0.45)] ${className}`}
+    >
+      <header className="mb-2 text-[13px] font-semibold uppercase tracking-widest text-[#A2A2B0]">
+        <span>BALANCE</span>
+      </header>
 
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 min-w-[3rem] items-center justify-center rounded-full bg-orange-500/20">
-            <TbCoinBitcoinFilled className="h-6 w-6 text-orange-500" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-3xl font-bold leading-tight">
-              {isConnected ? formattedBalance : "---"}
+      <div className="flex flex-1 flex-col justify-center min-h-[60px]">
+        <div className="flex items-center gap-3">
+          <TbCoinBitcoinFilled className="h-8 w-8 text-[#FF9533] shrink-0" />
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <span className="text-[56px] font-bold leading-none text-white tracking-tight">
+              {isConnected ? (balanceSats !== null ? balanceSats.toLocaleString() : "...") : "0"}
             </span>
-            <span className="text-sm text-white/50">
-              {isConnected ? "sats" : "Not connected"}
-            </span>
-            {isConnected && usdBalance && (
-              <span className="text-xs text-white/40 mt-0.5">
-                ≈ {usdBalance}
+            <span className="text-[40px] font-medium leading-none text-white">sats</span>
+            {isConnected && balanceSats !== null && (<span className="text-xl font-medium text-[#FF9533] ml-1">
+                ~${((balanceSats / 100_000_000) * 45000).toFixed(2)}
               </span>
             )}
           </div>
