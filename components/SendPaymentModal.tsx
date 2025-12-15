@@ -25,7 +25,7 @@ export default function SendPaymentModal({
   isOpen,
   onClose,
 }: SendPaymentModalProps) {
-  const { sdk, status } = useEmbeddedWallet();
+  const { sdk, status, refreshBalance } = useEmbeddedWallet();
   const [paymentInput, setPaymentInput] = useState("");
   const [amount, setAmount] = useState("");
   const [comment, setComment] = useState("");
@@ -140,6 +140,9 @@ export default function SendPaymentModal({
       }
 
       toast.success(`⚡ Payment sent! ${parseInt(amount)} sats`);
+
+      // Refresh balance across all components
+      refreshBalance();
 
       // Reset state before closing to avoid stuck loading
       setIsSending(false);

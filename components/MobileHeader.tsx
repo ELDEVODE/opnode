@@ -19,7 +19,7 @@ export default function MobileHeader() {
   
   const [balanceSats, setBalanceSats] = useState<number | null>(null);
 
-  // Fetch balance when wallet isready
+  // Fetch balance when wallet is ready
   useEffect(() => {
     if (!sdk || !isReady) {
       setBalanceSats(null);
@@ -37,6 +37,16 @@ export default function MobileHeader() {
     };
 
     loadBalance();
+
+    // Listen for balance refresh events
+    const handleRefresh = () => {
+      loadBalance();
+    };
+    window.addEventListener('wallet-balance-refresh', handleRefresh);
+
+    return () => {
+      window.removeEventListener('wallet-balance-refresh', handleRefresh);
+    };
   }, [sdk, isReady]);
 
   return (

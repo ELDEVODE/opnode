@@ -45,8 +45,18 @@ export default function BalanceComponent({
     };
 
     loadBalance();
+
+    // Listen for balance refresh events
+    const handleRefresh = () => {
+      if (!cancelled) {
+        loadBalance();
+      }
+    };
+    window.addEventListener('wallet-balance-refresh', handleRefresh);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('wallet-balance-refresh', handleRefresh);
     };
   }, [isConnected, sdk]);
 

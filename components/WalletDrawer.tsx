@@ -74,8 +74,18 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
     };
 
     loadBalance();
+
+    // Listen for balance refresh events
+    const handleRefresh = () => {
+      if (!cancelled) {
+        loadBalance();
+      }
+    };
+    window.addEventListener('wallet-balance-refresh', handleRefresh);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('wallet-balance-refresh', handleRefresh);
     };
   }, [isReady, sdk, isOpen]);
 

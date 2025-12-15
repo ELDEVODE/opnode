@@ -27,6 +27,7 @@ type EmbeddedWalletContextValue = {
   connectNewWallet: () => Promise<void>;
   resumeWallet: () => Promise<void>;
   disconnect: () => Promise<void>;
+  refreshBalance: () => void;
   error?: string;
 };
 
@@ -332,6 +333,11 @@ export default function EmbeddedWalletProvider({
     };
   }, [disconnect]);
 
+  const refreshBalance = useCallback(() => {
+    // Dispatch custom event to trigger balance refresh in all components
+    window.dispatchEvent(new CustomEvent('wallet-balance-refresh'));
+  }, []);
+
   const value = useMemo<EmbeddedWalletContextValue>(
     () => ({
       status,
@@ -341,6 +347,7 @@ export default function EmbeddedWalletProvider({
       connectNewWallet,
       resumeWallet,
       disconnect,
+      refreshBalance,
       error,
     }),
     [
@@ -348,6 +355,7 @@ export default function EmbeddedWalletProvider({
       disconnect,
       error,
       publicKey,
+      refreshBalance,
       resumeWallet,
       status,
       walletId,
