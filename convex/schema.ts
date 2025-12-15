@@ -33,6 +33,7 @@ export default defineSchema({
         ciphertext: v.string(),
       })
     ),
+    bolt12Offer: v.optional(v.string()), // Spark Address or BOLT12 offer for receiving gifts
     isLive: v.boolean(),
     viewers: v.number(),
     totalViews: v.number(),

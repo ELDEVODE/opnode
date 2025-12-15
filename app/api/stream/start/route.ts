@@ -8,7 +8,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { streamId } = body;
+    const { streamId, bolt12Offer } = body;
 
     if (!streamId) {
       return NextResponse.json(
@@ -17,9 +17,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Mark stream as live in Convex
+    // Mark stream as live in Convex and store Spark Address if provided
     await convex.mutation(api.streams.startStream, {
       streamId: streamId as Id<"streams">,
+      bolt12Offer,
     });
 
     return NextResponse.json({ success: true });

@@ -191,10 +191,10 @@ export default function StreamViewPage() {
       return;
     }
     
-    // Check if host has a Lightning address
-    if (!hostProfile?.lightningAddress) {
+    // Check if stream has Spark Address for receiving gifts
+    if (!stream.bolt12Offer) {
       toast.error(
-        "Streamer hasn't set up their Lightning address yet. They need to reconnect their wallet.",
+        "This streamer hasn't enabled gift receiving yet. They need to restart their stream with wallet connected.",
         { duration: 5000 }
       );
       return;
@@ -205,39 +205,30 @@ export default function StreamViewPage() {
     let giftId: any = null;
     
     try {
-      console.log("Sending Lightning gift via LNURL-pay:", { 
+      console.log("Sending gift via Spark Address:", { 
         amount: giftAmount, 
         toUser: stream.hostUserId,
-        lightningAddress: hostProfile.lightningAddress,
+        sparkAddress: stream.bolt12Offer,
       });
       
       toast.info("Preparing payment...");
       
-      // Parse the Lightning address and prepare LNURL-pay payment
-      const parsed = await sdk.parse(hostProfile.lightningAddress);
-      console.log("Parsed Lightning address:", parsed);
+      // Parse the Spark Address
+      const parsed = await sdk.parse(stream.bolt12Offer);
+      console.log("Parsed Spark Address:", parsed);
 
-      if (parsed.type !== "lightningAddress") {
-        throw new Error("Invalid Lightning address");
-      }
-
-      // Prepare the LNURL-pay payment with the specified amount
-      // Use the helper function from breezClient
-      const { prepareLnurlPay } = await import("@/lib/breezClient");
-      const prepareResponse = await prepareLnurlPay(
-        sdk,
-        giftAmount,
-        parsed.payRequest,
-        undefined // no comment
-      );
+      // Prepare the payment - amount is in the Spark Address
+      const prepareResponse = await sdk.prepareSendPayment({
+        paymentRequest: stream.bolt12Offer,
+      });
 
       console.log("Payment prepared:", prepareResponse);
       
       toast.info(`Sending ${giftAmount} sats as a gift...`);
 
-      // Send via LNURL-pay (this fetches an invoice automatically from Breez)
-      const paymentResult = await sdk.lnurlPay({
-        prepareResponse,
+      // Send payment
+      const paymentResult = await sdk.sendPayment({
+        prepareResponse
       });
 
       const payment = paymentResult.payment as any;

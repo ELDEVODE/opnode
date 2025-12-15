@@ -55,12 +55,20 @@ export const updateStreamMux = mutation({
 export const startStream = mutation({
   args: {
     streamId: v.id("streams"),
+    bolt12Offer: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.streamId, {
+    const updates: any = {
       isLive: true,
       startedAt: Date.now(),
-    });
+    };
+    
+    // Store BOLT12 offer if provided
+    if (args.bolt12Offer) {
+      updates.bolt12Offer = args.bolt12Offer;
+    }
+    
+    await ctx.db.patch(args.streamId, updates);
   },
 });
 

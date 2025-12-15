@@ -43,7 +43,7 @@ import LiveEndedModal from "@/components/LiveEndedModal";
 
 export default function StreamPage() {
   // Wallet and user
-  const { status } = useEmbeddedWallet();
+  const { status, sdk } = useEmbeddedWallet();
   const isWalletConnected = status === "ready";
 
   // Get stream metadata from PrepStream provider
@@ -259,10 +259,40 @@ export default function StreamPage() {
     if (!streamSessionId) return;
 
     try {
+      let sparkAddress: string | null = null;
+      
+      // Generate Spark Address for receiving gifts
+      if (status === 'ready' && sdk) {
+        try {
+          const result = await sdk.receivePayment({
+            paymentMethod: {
+              type: "sparkAddress",
+            },
+          }) as any;
+          
+          console.log("🔍 Spark Address result:", result);
+          
+          // Extract Spark Address from result
+          sparkAddress = result.destination || result.address || result.sparkAddress || null;
+          
+          if (sparkAddress) {
+            console.log("✅ Spark Address generated:", sparkAddress);
+          } else {
+            console.warn("⚠️ Spark Address not found in result:", result);
+          }
+        } catch (offerError) {
+          console.warn("Failed to generate Spark Address:", offerError);
+          // Continue without address - gifts just won't work
+        }
+      }
+
       const response = await fetch("/api/stream/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ streamId: streamSessionId }),
+        body: JSON.stringify({ 
+          streamId: streamSessionId,
+          bolt12Offer: sparkAddress // Send as bolt12Offer for backend compatibility
+        }),
       });
 
       if (!response.ok) {
