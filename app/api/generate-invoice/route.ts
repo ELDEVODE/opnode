@@ -1,54 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { ConvexHttpClient } from "convex/browser";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-/**
- * Generate invoice using Breez Greenlight API (server-side compatible)
- * This uses the Greenlight gRPC/REST API instead of the browser SDK
- */
 export async function POST(req: NextRequest) {
   try {
-    const { userId, amountSats } = await req.json();
-    
+    const body = await req.json();
+    const { userId, amountSats, description } = body;
+
     if (!userId || !amountSats) {
       return NextResponse.json(
-        { error: "Missing userId or amountSats" },
+        { error: "userId and amountSats are required" },
         { status: 400 }
       );
     }
 
-    if (amountSats < 1) {
-      return NextResponse.json(
-        { error: "Amount must be at least 1 sat" },
-        { status: 400 }
-      );
-    }
-
-    // Get user's wallet profile from Convex
+    // Get wallet profile for the user
     const walletProfile = await convex.query(api.wallets.getProfile, { userId });
     
     if (!walletProfile) {
       return NextResponse.json(
-        { error: "User wallet not found" },
+        { error: "User does not have a wallet set up" },
         { status: 404 }
       );
     }
 
-    // Use Greenlight API to generate invoice
-    // For now, return an error directing to use Lightning address or have streamer share invoice
+    // For now, return a message that invoice generation needs to happen client-side
+    // The streamer's wallet should generate the invoice, not server-side
     return NextResponse.json(
-      { 
-        error: "Invoice generation requires Breez Greenlight API integration or LNURL setup. Please ask the streamer to share their Lightning address or invoice." 
+      {
+        error: "Invoice generation must happen client-side with Breez SDK",
+        message: "Streamer needs to generate invoice using their connected wallet"
       },
-      { status: 501 } // Not Implemented
+      { status: 501 }
     );
 
-  } catch (error: any) {
-    console.error("Invoice generation error:", error);
+  } catch (error) {
+    console.error("Error in generate-invoice:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to generate invoice" },
+      { error: "Failed to process request" },
       { status: 500 }
     );
   }

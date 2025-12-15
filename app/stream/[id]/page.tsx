@@ -201,40 +201,46 @@ export default function StreamViewPage() {
     let giftId: any = null;
     
     try {
-      // Get streamer's public key for direct payment
-      if (!hostProfile?.publicKey) {
-        toast.error("Streamer wallet not set up for receiving payments");
-        return;
-      }
-
-      console.log("Sending gift via keysend:", { 
+      console.log("Sending gift:", { 
         amount: giftAmount, 
         toUser: stream.hostUserId,
-        nodeId: hostProfile.publicKey
       });
+      
+      toast.info("Generating payment request...");
+
+      // Request invoice from streamer via API
+      const invoiceResponse = await fetch('/api/generate-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: stream.hostUserId,
+          amountSats: giftAmount,
+          description: `Gift from ${myProfile?.username || 'viewer'}`
+        })
+      });
+
+      if (!invoiceResponse.ok) {
+        throw new Error('Failed to get payment request from streamer');
+      }
+
+      const { invoice } = await invoiceResponse.json();
+      console.log("Received invoice from streamer");
       
       toast.info(`Sending ${giftAmount} sats...`);
 
-      // Direct spontaneous payment (keysend) to streamer's node
+      // Prepare and send payment to invoice
       const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest: {
-          type: "spontaneousPayment",
-          nodeId: hostProfile.publicKey,
-          amountSats: BigInt(giftAmount),
-        } as any,
+        paymentRequest: invoice,
       });
 
-      console.log("Payment prepared:", prepareResponse);
-
-      // Send payment
       const paymentResult = await sdk.sendPayment({
         prepareResponse
       });
 
+      console.log("✅ Payment sent successfully:", paymentResult);
+
       const payment = paymentResult.payment as any;
       const paymentHash = payment.id || payment.paymentHash || payment.hash;
-      
-      console.log("✅ Payment sent successfully:", paymentResult);
 
       // Create gift record with real payment hash
       giftId = await sendGift({
