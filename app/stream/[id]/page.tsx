@@ -201,49 +201,30 @@ export default function StreamViewPage() {
     let giftId: any = null;
     
     try {
-      let paymentRequest = stream.bolt12Offer;
-      
-      // If no Spark Address, generate a fresh invoice
-      if (!paymentRequest) {
-        console.log("No Spark Address found, generating invoice...");
-        toast.info("Generating invoice...");
-        
-        const invoiceResult = await sdk.receivePayment({
-          paymentMethod: {
-            type: "bolt11Invoice",
-            description: `Gift of ${giftAmount} sats`,
-            amountSats: giftAmount,
-          },
-        }) as any;
-        
-        paymentRequest = invoiceResult.invoice || invoiceResult.bolt11 || invoiceResult.paymentRequest;
-        console.log("Generated invoice:", paymentRequest);
+      // Get streamer's public key for direct payment
+      if (!hostProfile?.publicKey) {
+        toast.error("Streamer wallet not set up for receiving payments");
+        return;
       }
-      
-      console.log("Sending gift:", { 
+
+      console.log("Sending gift via keysend:", { 
         amount: giftAmount, 
         toUser: stream.hostUserId,
-        paymentRequest,
+        nodeId: hostProfile.publicKey
       });
       
-      if (!paymentRequest) {
-        throw new Error("Failed to generate payment request");
-      }
-      
-      toast.info("Preparing payment...");
-      
-      // Parse the payment request
-      const parsed = await sdk.parse(paymentRequest);
-      console.log("Parsed payment request:", parsed);
+      toast.info(`Sending ${giftAmount} sats...`);
 
-      // Prepare the payment
+      // Direct spontaneous payment (keysend) to streamer's node
       const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest,
+        paymentRequest: {
+          type: "spontaneousPayment",
+          nodeId: hostProfile.publicKey,
+          amountSats: BigInt(giftAmount),
+        } as any,
       });
 
       console.log("Payment prepared:", prepareResponse);
-      
-      toast.info(`Sending ${giftAmount} sats as a gift...`);
 
       // Send payment
       const paymentResult = await sdk.sendPayment({
@@ -253,7 +234,7 @@ export default function StreamViewPage() {
       const payment = paymentResult.payment as any;
       const paymentHash = payment.id || payment.paymentHash || payment.hash;
       
-      console.log("Payment sent successfully:", paymentResult);
+      console.log("✅ Payment sent successfully:", paymentResult);
 
       // Create gift record with real payment hash
       giftId = await sendGift({
@@ -537,6 +518,27 @@ export default function StreamViewPage() {
 
           {/* Chat Input */}
           <div className="p-4 border-t border-white/5">
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl mb-4">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <HiOutlineEye className="w-5 h-5 text-white/60" />
+                  <span className="font-semibold">{viewerCount}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <HiOutlineGift className="w-5 h-5 text-orange-500" />
+                  <span className="font-semibold">{stream.totalEarnings || 0}</span>
+                  <span className="text-xs text-white/40">sats</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGiftModal(true)}
+                disabled={!isWalletConnected}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <HiOutlineGift className="w-5 h-5" />
+                Send Gift
+              </button>
+            </div>
             <div className="flex gap-2 items-end">
               <button
                 onClick={() => setShowGiftModal(true)}
