@@ -19,6 +19,18 @@ body {
     /* Firefox */
 }
 
+/* Scrollbar hide utility (same as no-scrollbar) */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
 /* Custom animations */
 @keyframes pulse-slow {
 
