@@ -226,6 +226,10 @@ export default function StreamViewPage() {
         paymentRequest,
       });
       
+      if (!paymentRequest) {
+        throw new Error("Failed to generate payment request");
+      }
+      
       toast.info("Preparing payment...");
       
       // Parse the payment request
