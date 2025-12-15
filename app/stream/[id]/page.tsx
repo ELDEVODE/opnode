@@ -16,6 +16,7 @@ import { getOrCreateWalletUserId } from "@/lib/userId";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
+import GiftModal from "@/components/GiftModal";
 
 
 // Dynamic import for emoji picker (client-side only)
@@ -54,9 +55,7 @@ export default function StreamViewPage() {
   const [chatInput, setChatInput] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
-  const [giftAmount, setGiftAmount] = useState(100);
   const [isProcessingGift, setIsProcessingGift] = useState(false);
-  const [giftError, setGiftError] = useState<string | null>(null);
   
   // Viewer tracking
   const [viewerCount, setViewerCount] = useState(0);
@@ -181,17 +180,24 @@ export default function StreamViewPage() {
     }
   };
 
-  const handleSendGift = async () => {
-    if (!isWalletConnected || !stream || !myProfile || !sdk || isProcessingGift) return;
+  const handleSendGift = async (giftAmount: number) => {
+    if (!isWalletConnected || !stream || !myProfile || isProcessingGift) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    if (!sdk) {
+      toast.error("Wallet not ready. Please try again.");
+      return;
+    }
     
     // Check if host has a public key to receive payments
     if (!hostProfile?.publicKey && !hostWallet?.publicKey) {
-      setGiftError("Streamer hasn't set up their wallet to receive gifts yet.");
+      toast.error("Streamer hasn't set up their wallet to receive gifts yet.");
       return;
     }
 
     setIsProcessingGift(true);
-    setGiftError(null);
     
     let giftId: any = null;
     
@@ -275,9 +281,8 @@ export default function StreamViewPage() {
       });
 
       // Show success
-      alert(`✅ Successfully sent ${giftAmount} sats!`);
+      toast.success(`⚡ Successfully sent ${giftAmount} sats gift!`);
       setShowGiftModal(false);
-      setGiftAmount(100);
       
     } catch (error: any) {
       console.error("Gift payment failed:", error);
@@ -291,8 +296,7 @@ export default function StreamViewPage() {
       }
       
       const errorMessage = error?.message || "Failed to send gift. Please try again.";
-      setGiftError(errorMessage);
-      alert(`❌ Payment failed: ${errorMessage}`);
+      toast.error(`Payment failed: ${errorMessage}`);
     } finally {
       setIsProcessingGift(false);
     }
@@ -626,75 +630,13 @@ export default function StreamViewPage() {
       )}
 
       {/* Gift Modal */}
-      {showGiftModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1F1F25] rounded-3xl p-8 max-w-md w-full mx-4">
-            <h3 className="text-2xl font-bold mb-4">Send Gift ⚡</h3>
-            <p className="text-white/60 mb-6">
-              Send sats via Lightning Network to support {hostProfile?.username || "the streamer"}
-            </p>
-            
-            {giftError && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-                {giftError}
-              </div>
-            )}
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">
-                Amount (sats)
-              </label>
-              <input
-                type="number"
-                value={giftAmount}
-                onChange={(e) => setGiftAmount(parseInt(e.target.value) || 0)}
-                min="1"
-                disabled={isProcessingGift}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 disabled:opacity-50"
-              />
-              <div className="flex gap-2 mt-2">
-                {[100, 500, 1000, 5000].map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => setGiftAmount(amount)}
-                    disabled={isProcessingGift}
-                    className="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition disabled:opacity-50"
-                  >
-                    {amount}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={handleSendGift}
-                disabled={isProcessingGift || giftAmount <= 0}
-                className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                {isProcessingGift ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin">⚡</span>
-                    Sending...
-                  </span>
-                ) : (
-                  `Send ${giftAmount} sats`
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setShowGiftModal(false);
-                  setGiftError(null);
-                }}
-                disabled={isProcessingGift}
-                className="px-6 py-3 bg-white/10 rounded-lg hover:bg-white/20 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GiftModal
+        isOpen={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        onSendGift={handleSendGift}
+        hostUsername={hostProfile?.username}
+        isProcessing={isProcessingGift}
+      />
     </div>
   );
 }
