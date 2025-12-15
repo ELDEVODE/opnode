@@ -262,7 +262,9 @@ export default function EmbeddedWalletProvider({
       });
 
       // Get Lightning address from Breez (e.g., user@breez.technology)
+      console.log("🔍 Breez wallet info (new wallet):", info); // Debug
       const lightningAddress = info.lnAddress || info.lightningAddress || null;
+      console.log("🔍 Lightning address found (new wallet):", lightningAddress); // Debug
       
       // Update user profile with Lightning address if available
       if (lightningAddress) {
@@ -311,10 +313,47 @@ export default function EmbeddedWalletProvider({
           throw new Error("No saved wallet found for this user");
         }
 
-        await hydrateSdk(profile.mnemonic);
-        setWalletId(profile.walletId);
-        setPublicKey(profile.publicKey);
+        const { mnemonic } = profile;
+        const sdk = await hydrateSdk(mnemonic);
+        const info = (await sdk.getInfo({ ensureSynced: false })) as any;
+        const derivedWalletId =
+          (info.nodeId as string | undefined) ??
+          (info.walletId as string | undefined) ??
+          fallbackId();
+        const derivedPublicKey =
+          (info.nodePubkey as string | undefined) ??
+          (info.walletPubkey as string | undefined) ??
+          derivedWalletId;
+
+        setWalletId(derivedWalletId);
+        setPublicKey(derivedPublicKey);
         setStatus("ready");
+
+        // Migration: Get and store Lightning address if not already set
+        console.log("🔍 Breez wallet info:", info); // Debug: see all fields
+        const lightningAddress = info.lnAddress || info.lightningAddress || null;
+        console.log("🔍 Lightning address found:", lightningAddress); // Debug
+        
+        if (lightningAddress) {
+          try {
+            const userProfile = await convex.query(api.users.getProfile, { userId });
+            // Only update if the profile exists and doesn't have a Lightning address yet
+            if (userProfile && !userProfile.lightningAddress) {
+              await convex.mutation(api.users.updateLightningAddress, {
+                userId,
+                lightningAddress,
+              });
+              console.log("✅ Lightning address migrated:", lightningAddress);
+            } else if (userProfile?.lightningAddress) {
+              console.log("ℹ️ Lightning address already set:", userProfile.lightningAddress);
+            }
+          } catch (error) {
+            console.warn("Failed to migrate Lightning address:", error);
+            // Don't fail wallet resume if migration fails
+          }
+        } else {
+          console.warn("⚠️ No Lightning address found in Breez wallet info");
+        }
       } catch (resumeError) {
         console.error(resumeError);
         if (options?.allowNoWallet) {
