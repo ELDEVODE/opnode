@@ -151,13 +151,42 @@ export async function lnurlPay(
 }
 
 /**
- * Get node info (includes Lightning address components)
+ * Get node information
  */
 export async function getNodeInfo(sdk: BreezSdkInstance) {
+  return await sdk.getInfo({ ensureSynced: false });
+}
+
+/**
+ * Sync payment history from Lightning Network
+ * Fetches all payments from Breez SDK and returns them
+ */
+export async function syncPaymentHistory(sdk: BreezSdkInstance) {
   try {
-    return await sdk.getInfo({ ensureSynced: false });
+    // Get all payments from SDK
+    const paymentsResponse = await sdk.listPayments({});
+    const payments = (paymentsResponse as any).payments || [];
+
+    console.log(`Found ${payments.length} payments in Lightning Network history`);
+
+    // Transform to our format
+    const history = payments.map((payment: any) => {
+      const isReceived = payment.paymentType === "received" || payment.status === "Complete";
+      const amountSats = payment.amountSats || (payment.amountMsat ? payment.amountMsat / 1000 : 0);
+
+      return {
+        paymentHash: payment.id || payment.paymentHash || payment.hash,
+        type: isReceived ? "received" : "sent",
+        amountSats: Math.floor(amountSats),
+        timestamp: payment.paymentTime || payment.timestamp || Date.now(),
+        description: payment.description || "",
+        status: payment.status || "complete",
+      };
+    });
+
+    return history;
   } catch (error) {
-    console.error("Failed to get node info:", error);
-    throw error;
+    console.error("Failed to sync payment history:", error);
+    return [];
   }
 }

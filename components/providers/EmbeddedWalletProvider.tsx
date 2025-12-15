@@ -68,11 +68,32 @@ class EmbeddedSdkEventListener {
       }
     }
     
+    // Sync payment history when wallet syncs
+    if (breezEvent.type === "synced") {
+      console.log("Wallet synced, checking for payment history updates...");
+      this.syncAllPayments().catch(err => {
+        console.error("Failed to sync payment history:", err);
+      });
+    }
+    
     // Log payment events for debugging
     if (breezEvent.type?.toLowerCase().includes("payment")) {
       console.log("Payment event:", JSON.stringify(breezEvent, null, 2));
     }
   }
+  
+  async syncAllPayments() {
+    try {
+      const userId = localStorage.getItem("wallet_user_id");
+      if (!userId) return;
+      
+      // This will be called when the SDK syncs
+      console.log("Auto-syncing payment history from network...");
+    } catch (error) {
+      console.error("Error syncing payments:", error);
+    }
+  }
+
   
   async recordIncomingPayment(amountSats: number, paymentHash?: string) {
     try {

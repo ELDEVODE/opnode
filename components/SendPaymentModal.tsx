@@ -83,9 +83,9 @@ export default function SendPaymentModal({
       } else {
         toast.error(`Payment type ${parsed.type} is not yet supported`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Parse error:", error);
-      toast.error("Invalid payment request");
+      toast.error(error.message || "Invalid payment request");
     }
   };
 
@@ -125,13 +125,22 @@ export default function SendPaymentModal({
         });
       }
 
-      toast.success(`Payment sent! ${parseInt(amount)} sats`);
+      toast.success(`⚡ Payment sent! ${parseInt(amount)} sats`);
 
       onClose();
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Send error:", error);
-      toast.error("Failed to send payment");
+      
+      // Show user-friendly error messages
+      if (error.message?.toLowerCase().includes("insufficient funds")) {
+        toast.error("Insufficient funds. You need at least 10 sats to send payments (includes network fees).");
+      } else if (error.message?.toLowerCase().includes("invalid")) {
+        toast.error("Invalid payment request. Please check and try again.");
+      } else {
+        toast.error(error.message || "Failed to send payment");
+      }
+      
       setStep("confirm");
     } finally {
       setIsSending(false);

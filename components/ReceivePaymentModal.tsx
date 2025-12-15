@@ -136,8 +136,21 @@ export default function ReceivePaymentModal({
                     return;
                   }
                   
+                  // Get button element to show loading
+                  const button = document.querySelector('#generate-invoice-btn') as HTMLButtonElement;
+                  const originalText = button?.textContent;
+                  
                   try {
-                    toast.info("Generating invoice...");
+                    // Show loading state
+                    if (button) {
+                      button.disabled = true;
+                      button.innerHTML = `
+                        <div class="flex items-center gap-2">
+                          <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          <span>Generating...</span>
+                        </div>
+                      `;
+                    }
                     
                     // Generate invoice using Breez SDK
                     // For Spark, use bolt11Invoice payment method
@@ -161,10 +174,17 @@ export default function ReceivePaymentModal({
                     }
                   } catch (err: any) {
                     console.error("Invoice generation error:", err);
-                    toast.error(`Failed: ${err.message || "Unknown error"}`);
+                    toast.error(err.message || "Failed to generate invoice");
+                  } finally {
+                    // Restore button
+                    if (button) {
+                      button.disabled = false;
+                      button.textContent = originalText || "Generate & Copy";
+                    }
                   }
                 }}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-semibold transition"
+                id="generate-invoice-btn"
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Generate & Copy
               </button>
