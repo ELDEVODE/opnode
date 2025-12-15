@@ -44,6 +44,30 @@ export const upsertProfile = mutation({
   },
 });
 
+// Update Lightning address for user profile
+export const updateLightningAddress = mutation({
+  args: {
+    userId: v.string(),
+    lightningAddress: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    if (!existing) {
+      throw new Error("User profile not found");
+    }
+
+    await ctx.db.patch(existing._id, {
+      lightningAddress: args.lightningAddress,
+    });
+
+    return existing._id;
+  },
+});
+
 // Generate upload URL for profile images
 export const generateUploadUrl = mutation({
   args: {},

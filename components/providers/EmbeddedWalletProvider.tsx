@@ -251,6 +251,8 @@ export default function EmbeddedWalletProvider({
         derivedWalletId;
 
       const userId = ensureUserId();
+      
+      // Save wallet profile
       await convex.mutation(api.wallets.upsertProfile, {
         userId,
         walletId: derivedWalletId,
@@ -258,6 +260,25 @@ export default function EmbeddedWalletProvider({
         network: breezNetwork,
         mnemonic,
       });
+
+      // Get Lightning address from Breez (e.g., user@breez.technology)
+      const lightningAddress = info.lnAddress || info.lightningAddress || null;
+      
+      // Update user profile with Lightning address if available
+      if (lightningAddress) {
+        try {
+          const existingProfile = await convex.query(api.users.getProfile, { userId });
+          if (existingProfile) {
+            await convex.mutation(api.users.updateLightningAddress, {
+              userId,
+              lightningAddress,
+            });
+          }
+        } catch (error) {
+          console.warn("Failed to store Lightning address:", error);
+          // Don't fail wallet creation if Lightning address update fails
+        }
+      }
 
       setWalletId(derivedWalletId);
       setPublicKey(derivedPublicKey);

@@ -191,9 +191,12 @@ export default function StreamViewPage() {
       return;
     }
     
-    // Check if host has a public key to receive payments
-    if (!hostProfile?.publicKey && !hostWallet?.publicKey) {
-      toast.error("Streamer hasn't set up their wallet to receive gifts yet.");
+    // Check if host has a Lightning address
+    if (!hostProfile?.lightningAddress) {
+      toast.error(
+        "Streamer hasn't set up their Lightning address yet. They need to reconnect their wallet.",
+        { duration: 5000 }
+      );
       return;
     }
 
@@ -202,50 +205,38 @@ export default function StreamViewPage() {
     let giftId: any = null;
     
     try {
-      console.log("Sending Lightning gift:", { 
+      console.log("Sending Lightning gift via LNURL-pay:", { 
         amount: giftAmount, 
         toUser: stream.hostUserId,
+        lightningAddress: hostProfile.lightningAddress,
       });
       
-      // Step 1: Generate invoice from streamer's wallet (server-side)
-      toast.info("Preparing gift payment...");
+      toast.info("Preparing payment...");
       
-      const invoiceResponse = await fetch("/api/generate-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: stream.hostUserId,
-          amountSats: giftAmount,
-        }),
-      });
+      // Parse the Lightning address and prepare LNURL-pay payment
+      const parsed = await sdk.parse(hostProfile.lightningAddress);
+      console.log("Parsed Lightning address:", parsed);
 
-      if (!invoiceResponse.ok) {
-        const error = await invoiceResponse.json();
-        throw new Error(error.error || "Failed to generate invoice");
+      if (parsed.type !== "lightningAddress") {
+        throw new Error("Invalid Lightning address");
       }
 
-      const { invoice } = await invoiceResponse.json();
-      console.log("Generated invoice for streamer:", invoice);
-
-      // Step 2: Parse and prepare payment
-      const parsed = await sdk.parse(invoice);
-      console.log("Parsed invoice:", parsed);
-
-      if (parsed.type !== "bolt11Invoice") {
-        throw new Error("Invalid invoice type");
-      }
-
-      // Step 3: Prepare payment
-      toast.info(`Sending ${giftAmount} sats as a gift...`);
-      
-      const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest: invoice,
-      });
+      // Prepare the LNURL-pay payment with the specified amount
+      // Use the helper function from breezClient
+      const { prepareLnurlPay } = await import("@/lib/breezClient");
+      const prepareResponse = await prepareLnurlPay(
+        sdk,
+        giftAmount,
+        parsed.payRequest,
+        undefined // no comment
+      );
 
       console.log("Payment prepared:", prepareResponse);
+      
+      toast.info(`Sending ${giftAmount} sats as a gift...`);
 
-      // Step 4: Send the payment
-      const paymentResult = await sdk.sendPayment({
+      // Send via LNURL-pay (this fetches an invoice automatically from Breez)
+      const paymentResult = await sdk.lnurlPay({
         prepareResponse,
       });
 
@@ -254,7 +245,7 @@ export default function StreamViewPage() {
       
       console.log("Payment sent successfully:", paymentResult);
 
-      // Step 5: Create gift record with real payment hash
+      // Create gift record with real payment hash
       giftId = await sendGift({
         streamId,
         fromUserId: userId!,

@@ -111,6 +111,7 @@ export default function Navbar() {
                       displayName: userProfile.displayName,
                       avatarUrl: userProfile.avatarUrl,
                       bannerUrl: userProfile.bannerUrl,
+                      lightningAddress: userProfile.lightningAddress,
                     }
                   : null
               }

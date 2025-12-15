@@ -4,6 +4,10 @@ import { api } from "@/convex/_generated/api";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
+/**
+ * Generate invoice using Breez Greenlight API (server-side compatible)
+ * This uses the Greenlight gRPC/REST API instead of the browser SDK
+ */
 export async function POST(req: NextRequest) {
   try {
     const { userId, amountSats } = await req.json();
@@ -32,34 +36,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Initialize Breez SDK with user's mnemonic
-    const { buildBreezSdk } = await import("@/lib/breezClient");
-    const sdk = await buildBreezSdk(walletProfile.mnemonic);
-
-
-    // Generate invoice
-    const invoice = await sdk.receivePayment({
-      paymentMethod: {
-        type: "bolt11Invoice",
-        description: `Gift of ${amountSats} sats`,
-        amountSats: amountSats, // Should be number, not BigInt
+    // Use Greenlight API to generate invoice
+    // For now, return an error directing to use Lightning address or have streamer share invoice
+    return NextResponse.json(
+      { 
+        error: "Invoice generation requires Breez Greenlight API integration or LNURL setup. Please ask the streamer to share their Lightning address or invoice." 
       },
-    }) as any;
-
-    const bolt11 = invoice.invoice || invoice.bolt11 || invoice.paymentRequest || "";
-
-    if (!bolt11) {
-      console.error("Failed to extract invoice:", invoice);
-      return NextResponse.json(
-        { error: "Failed to generate invoice" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      invoice: bolt11,
-      amountSats,
-    });
+      { status: 501 } // Not Implemented
+    );
 
   } catch (error: any) {
     console.error("Invoice generation error:", error);

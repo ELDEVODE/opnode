@@ -15,6 +15,7 @@ type ProfileDropdownProps = {
     displayName: string;
     avatarUrl?: string | null;
     bannerUrl?: string | null;
+    lightningAddress?: string | null;
   } | null;
 };
 
@@ -118,6 +119,12 @@ export default function ProfileDropdown({
             <p className="text-gray-400 text-sm">
               {profile.username}@opnode.io
             </p>
+            {profile.lightningAddress && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-white/60">
+                <span className="text-orange-500">⚡</span>
+                <span className="font-mono truncate">{profile.lightningAddress}</span>
+              </div>
+            )}
           </div>
 
           {/* Divider */}
