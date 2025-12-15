@@ -76,9 +76,16 @@ class EmbeddedSdkEventListener {
       });
     }
     
-    // Log payment events for debugging
+    // Log payment events for debugging (with BigInt handling)
     if (breezEvent.type?.toLowerCase().includes("payment")) {
-      console.log("Payment event:", JSON.stringify(breezEvent, null, 2));
+      // Custom replacer to handle BigInt values
+      const replacer = (key: string, value: any) => {
+        if (typeof value === 'bigint') {
+          return value.toString();
+        }
+        return value;
+      };
+      console.log("Payment event:", JSON.stringify(breezEvent, replacer, 2));
     }
   }
   
@@ -114,7 +121,15 @@ class EmbeddedSdkEventListener {
         paymentHash: paymentHash || `incoming-${Date.now()}`,
       });
       
-      console.log("✅ Payment recorded in history");
+      // Create notification for received payment
+      await convex.mutation(api.users.createNotification, {
+        userId,
+        type: "payment_received",
+        title: "Payment Received",
+        message: `You received ${amountSats} sats`,
+      });
+      
+      console.log("✅ Payment recorded in history and notification created");
     } catch (error) {
       console.error("Error recording payment:", error);
     }

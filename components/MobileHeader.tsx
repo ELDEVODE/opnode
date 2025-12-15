@@ -59,10 +59,17 @@ export default function MobileHeader() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF9100] text-white text-[14px]">
                 <FaBitcoin />
               </span>
-              <span className="uppercase text-[#A0A0A8] mr-1">Balance</span>
-              <span className="text-white">
-                {balanceSats !== null ? balanceSats.toLocaleString() : "..."} sats
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="uppercase text-[#A0A0A8] mr-1">Balance</span>
+                <span className="font-bold text-white flex items-baseline gap-1.5">
+                  {balanceSats !== null ? balanceSats.toLocaleString() : "..."} sats
+                  {balanceSats !== null && (
+                    <span className="text-sm font-medium text-[#FF9533] ml-1">
+                      ~${((balanceSats / 100_000_000) * 45000).toFixed(2)}
+                    </span>
+                  )}
+                </span>
+              </div>
             </div>
           ) : (
             <button

@@ -127,8 +127,10 @@ export default function SendPaymentModal({
 
       toast.success(`⚡ Payment sent! ${parseInt(amount)} sats`);
 
-      onClose();
+      // Reset state before closing to avoid stuck loading
+      setIsSending(false);
       resetForm();
+      onClose();
     } catch (error: any) {
       console.error("Send error:", error);
       
@@ -141,9 +143,8 @@ export default function SendPaymentModal({
         toast.error(error.message || "Failed to send payment");
       }
       
-      setStep("confirm");
-    } finally {
       setIsSending(false);
+      setStep("confirm");
     }
   };
 

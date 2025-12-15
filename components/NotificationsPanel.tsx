@@ -62,6 +62,10 @@ export default function NotificationsPanel() {
         return "📺";
       case "mention":
         return "💬";
+      case "payment_received":
+        return "⚡";
+      case "payment_sent":
+        return "💸";
       default:
         return "🔔";
     }
