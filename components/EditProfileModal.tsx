@@ -19,7 +19,7 @@ export default function EditProfileModal({
   isOpen,
   onClose,
 }: EditProfileModalProps) {
-  const userId = getOrCreateWalletUserId();
+  const [userId, setUserId] = useState<string | null>(null);
   
   const userProfile = useQuery(
     api.users.getProfile,
@@ -36,6 +36,13 @@ export default function EditProfileModal({
 
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
   const upsertProfile = useMutation(api.users.upsertProfile);
+
+  // Get userId after mount to avoid SSR issues
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setUserId(getOrCreateWalletUserId());
+    }
+  }, []);
 
   // Load current profile data
   useEffect(() => {
@@ -85,6 +92,11 @@ export default function EditProfileModal({
   const handleSave = async () => {
     if (!displayName.trim()) {
       toast.error("Display name is required");
+      return;
+    }
+
+    if (!userId) {
+      toast.error("User ID not available");
       return;
     }
 

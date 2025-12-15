@@ -1,23 +1,8 @@
+"use client";
+
 import BalanceComponent from "@/components/balanceComponent";
 import StreamEarnComponent from "@/components/StreamEarnComponent";
 import StreamFeed from "@/components/StreamFeed";
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Discover live streams, earn and send sats on OPNODE.",
-  openGraph: {
-    title: "Dashboard - OPNODE",
-    description: "Discover live streams, earn and send sats.",
-    images: ["/images/500l.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Dashboard - OPNODE",
-    description: "Discover live streams, earn and send sats.",
-    images: ["/images/500l.png"],
-  },
-};
 
 
 export default function DashboardPage() {
