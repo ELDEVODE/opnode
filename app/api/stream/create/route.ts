@@ -60,53 +60,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has an existing inactive stream that can be reused
-    let existingStreams: any[] = [];
-    try {
-      existingStreams = await convex.query(api.streams.getUserStreams, {
-        userId,
-      });
-      console.log(`Found ${existingStreams?.length || 0} existing streams for user`);
-    } catch (error) {
-      console.error("Error fetching existing streams:", error);
-      existingStreams = [];
-    }
-
-    // Find the most recent inactive stream with Mux credentials
-    const reusableStream = existingStreams && Array.isArray(existingStreams)
-      ? existingStreams
-          .filter((stream) => !stream.isLive && stream.muxStreamId && stream.muxPlaybackId)
-          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0]
-      : null;
-
-    if (reusableStream) {
-      // Reuse existing stream - just update the metadata
-      console.log(`✅ Reusing stream ${reusableStream._id} for user ${userId}`);
-      
-      try {
-        await convex.mutation(api.streams.resetStreamForReuse, {
-          streamId: reusableStream._id,
-          title,
-          description,
-          tags: tags || [],
-          category: category || "Live",
-          thumbnailStorageId,
-        });
-
-        return NextResponse.json({
-          success: true,
-          streamId: reusableStream._id,
-          muxStreamId: reusableStream.muxStreamId,
-          muxPlaybackId: reusableStream.muxPlaybackId,
-          reused: true,
-        });
-      } catch (error) {
-        console.error("Error reusing stream:", error);
-        // Fall through to create new stream
-      }
-    }
-
-    // No reusable stream found - create a new one
+    // Always create a new stream (Mux deletes streams after ending, so reuse is not possible)
     console.log(`📺 Creating new stream for user ${userId}`);
 
     // Create stream in Convex first
@@ -147,7 +101,6 @@ export async function POST(req: NextRequest) {
       streamId,
       muxStreamId: muxStream.streamId,
       muxPlaybackId: muxStream.playbackId,
-      reused: false,
     });
   } catch (error) {
     console.error("❌ Error creating/reusing stream:", error);

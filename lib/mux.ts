@@ -139,4 +139,41 @@ export async function verifyWebhookSignature(
   }
 }
 
+/**
+ * Get current concurrent viewers for a live stream from Mux Data API
+ */
+export async function getCurrentViewers(playbackId: string): Promise<number> {
+  try {
+    // Mux Data API endpoint for real-time metrics
+    // Note: This uses the same credentials (tokenId/tokenSecret) as the Video API
+    const response = await fetch(
+      `https://api.mux.com/data/v1/video-views?filters[]=playback_id:${playbackId}&measurement=median&timeframe=1m`,
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from(
+            `${process.env.MUX_TOKEN_ID}:${process.env.MUX_TOKEN_SECRET}`
+          ).toString("base64")}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`Mux Data API error: ${response.status}`);
+      return 0;
+    }
+
+    const data = await response.json();
+    
+    // The API returns various metrics, we need concurrent viewers
+    // Format: { data: { total_row_count: number, ... } }
+    // For real-time current viewers, we look at the latest data point
+    const totalViews = data?.data?.total_row_count || 0;
+    
+    return totalViews;
+  } catch (error) {
+    console.error("Error fetching viewer count from Mux:", error);
+    return 0;
+  }
+}
+
 export default mux;

@@ -78,48 +78,46 @@ export default function StreamViewPage() {
     isWalletConnected && userId ? { userId } : "skip"
   );
   
-  // Viewer count tracking - increment when joining, decrement when leaving
+  
+  // Viewer count tracking - Poll Mux Data API for real-time counts
   useEffect(() => {
-    if (!stream || !userId || hasJoinedRef.current) return;
-    
-    hasJoinedRef.current = true; // Mark as joined
-    
-    // Increment viewer count when component mounts
-    const currentViewers = stream.viewers || 0;
-    const newViewerCount = currentViewers + 1;
-    setViewerCount(newViewerCount);
-    
-    updateViewers({ streamId, viewers: newViewerCount }).catch(console.error);
-    
-    // Update local viewer count display every 30 seconds from database
-    viewerIntervalRef.current = setInterval(() => {
-      if (stream) {
-        setViewerCount(stream.viewers || 0);
+    if (!stream?.muxPlaybackId || !stream.isLive) {
+      setViewerCount(0);
+      return;
+    }
+
+    // Fetch viewer count from Mux Data API
+    const fetchViewerCount = async () => {
+      try {
+        const response = await fetch(
+          `/api/mux/viewers?playbackId=${stream.muxPlaybackId}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          const count = data.viewers || 0;
+          setViewerCount(count);
+          
+          // Also update Convex database for consistency
+          await updateViewers({ streamId, viewers: count }).catch(console.error);
+        }
+      } catch (error) {
+        console.error("Failed to fetch viewer count:", error);
       }
-    }, 30000);
-    
-    // Decrement viewer count when component unmounts
+    };
+
+    // Initial fetch
+    fetchViewerCount();
+
+    // Poll every 15 seconds for live updates
+    viewerIntervalRef.current = setInterval(fetchViewerCount, 15000);
+
     return () => {
       if (viewerIntervalRef.current) {
         clearInterval(viewerIntervalRef.current);
       }
-      
-      // Use a callback to get the latest viewer count
-      updateViewers({ 
-        streamId, 
-        viewers: Math.max(0, (stream.viewers || 1) - 1)
-      }).catch(console.error);
-      
-      hasJoinedRef.current = false; // Reset for potential remount
     };
-  }, [streamId, userId]); // Removed stream?.viewers to prevent infinite loop
-  
-  // Update local viewerCount when stream.viewers changes (without re-joining)
-  useEffect(() => {
-    if (stream && hasJoinedRef.current) {
-      setViewerCount(stream.viewers || 0);
-    }
-  }, [stream?.viewers]);
+  }, [stream?.muxPlaybackId, stream?.isLive, streamId]);
   
   // Close emoji picker when clicking outside
   useEffect(() => {

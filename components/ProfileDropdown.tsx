@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { IoLogOutOutline } from "react-icons/io5";
+import { RiEdit2Line } from "react-icons/ri";
 import { useEmbeddedWallet } from "@/components/providers/EmbeddedWalletProvider";
 
 type ProfileDropdownProps = {
   isOpen: boolean;
   onClose: () => void;
+  onEditProfile: () => void;
   profile: {
     username: string;
     displayName: string;
@@ -19,6 +21,7 @@ type ProfileDropdownProps = {
 export default function ProfileDropdown({
   isOpen,
   onClose,
+  onEditProfile,
   profile,
 }: ProfileDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -96,9 +99,13 @@ export default function ProfileDropdown({
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-3xl">
-                  {profile.username?.charAt(0).toUpperCase() || "U"}
-                </div>
+                <Image
+                  src="/images/profile.png"
+                  alt="Profile"
+                  width={96}
+                  height={96}
+                  className="object-cover"
+                />
               )}
             </div>
           </div>
@@ -118,6 +125,16 @@ export default function ProfileDropdown({
 
           {/* Menu Items */}
           <div className="space-y-1">
+            <button
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition text-white text-sm"
+              onClick={() => {
+                onEditProfile();
+                onClose();
+              }}
+            >
+              <RiEdit2Line className="w-5 h-5" />
+              <span>Edit Profile</span>
+            </button>
             <button
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-red-500/10 transition text-red-400 text-sm"
               onClick={handleDisconnect}

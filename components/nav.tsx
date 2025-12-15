@@ -11,12 +11,14 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getOrCreateWalletUserId } from "@/lib/userId";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import EditProfileModal from "@/components/EditProfileModal";
 
 export default function Navbar() {
   const { status } = useEmbeddedWallet();
   const { openPanel } = useNotificationPanel();
   const isReady = status === "ready";
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // Only get userId after mount to avoid SSR issues
   const [userId, setUserId] = useState<string | null>(null);
@@ -88,15 +90,20 @@ export default function Navbar() {
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
-                  {userProfile?.username?.charAt(0).toUpperCase() || "U"}
-                </div>
+                <Image
+                  src="/images/profile.png"
+                  alt="Profile"
+                  fill
+                  sizes="50px"
+                  className="object-cover"
+                />
               )}
             </button>
 
             <ProfileDropdown
               isOpen={isProfileOpen}
               onClose={() => setIsProfileOpen(false)}
+              onEditProfile={() => setIsEditProfileOpen(true)}
               profile={
                 userProfile
                   ? {
@@ -110,6 +117,11 @@ export default function Navbar() {
             />
           </div>
         )}
+
+        <EditProfileModal
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+        />
       </div>
     </div>
   );

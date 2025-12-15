@@ -6,6 +6,11 @@ import { FaBitcoin } from "react-icons/fa";
 import { useWalletModal } from "@/components/providers/WalletModalProvider";
 import { useEmbeddedWallet } from "@/components/providers/EmbeddedWalletProvider";
 import { useNotificationPanel } from "@/components/providers/NotificationPanelProvider";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { getOrCreateWalletUserId } from "@/lib/userId";
+import ProfileDropdown from "@/components/ProfileDropdown";
+import EditProfileModal from "@/components/EditProfileModal";
 import StreamFilters from "@/components/StreamFilters";
 import { useStreamFeedStore } from "@/stores/streamFeedStore";
 import { useState, useEffect } from "react";
@@ -16,8 +21,23 @@ export default function MobileHeader() {
   const { openPanel } = useNotificationPanel();
   const isReady = status === "ready";
   const { activeCategory, setActiveCategory } = useStreamFeedStore();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   
   const [balanceSats, setBalanceSats] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Get userId after mount to avoid SSR issues
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setUserId(getOrCreateWalletUserId());
+    }
+  }, []);
+
+  const userProfile = useQuery(
+    api.users.getProfile,
+    isReady && userId ? { userId } : "skip"
+  );
 
   // Fetch balance when wallet is ready
   useEffect(() => {
@@ -104,20 +124,54 @@ export default function MobileHeader() {
           >
             <PiBellSimpleFill className="h-6.5 w-6.5" />
           </button>
-          <button
-            type="button"
-            aria-label="Profile"
-            className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-white bg-white"
-          >
-            <Image
-              src="/images/profile.png"
-              alt="Profile"
-              fill
-              className="object-cover"
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              aria-label="Profile"
+              className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-white bg-white"
+            >
+              {userProfile?.avatarUrl ? (
+                <Image
+                  src={userProfile.avatarUrl}
+                  alt="Profile"
+                  fill
+                  unoptimized
+                  className="object-cover"
+                />
+              ) : (
+                <Image
+                  src="/images/profile.png"
+                  alt="Profile"
+                  fill
+                  className="object-cover"
+                />
+              )}
+            </button>
+
+            <ProfileDropdown
+              isOpen={isProfileOpen}
+              onClose={() => setIsProfileOpen(false)}
+              onEditProfile={() => setIsEditProfileOpen(true)}
+              profile={
+                userProfile
+                  ? {
+                      username: userProfile.username,
+                      displayName: userProfile.displayName,
+                      avatarUrl: userProfile.avatarUrl,
+                      bannerUrl: userProfile.bannerUrl,
+                    }
+                  : null
+              }
             />
-          </button>
+          </div>
         </div>
       </div>
+
+      <EditProfileModal
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+      />
 
       <div className="w-full relative">
         <StreamFilters
