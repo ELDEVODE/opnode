@@ -191,35 +191,50 @@ export default function StreamViewPage() {
       return;
     }
     
-    // Check if stream has Spark Address for receiving gifts
-    if (!stream.bolt12Offer) {
-      toast.error(
-        "This streamer hasn't enabled gift receiving yet. They need to restart their stream with wallet connected.",
-        { duration: 5000 }
-      );
-      return;
-    }
+    // TODO: Re-enable Spark Address once we confirm it works
+    // For now, try direct payment to see what happens
+    console.log("Stream data:", stream);
+    console.log("Spark Address (bolt12Offer):", stream.bolt12Offer);
 
     setIsProcessingGift(true);
     
     let giftId: any = null;
     
     try {
-      console.log("Sending gift via Spark Address:", { 
+      let paymentRequest = stream.bolt12Offer;
+      
+      // If no Spark Address, generate a fresh invoice
+      if (!paymentRequest) {
+        console.log("No Spark Address found, generating invoice...");
+        toast.info("Generating invoice...");
+        
+        const invoiceResult = await sdk.receivePayment({
+          paymentMethod: {
+            type: "bolt11Invoice",
+            description: `Gift of ${giftAmount} sats`,
+            amountSats: giftAmount,
+          },
+        }) as any;
+        
+        paymentRequest = invoiceResult.invoice || invoiceResult.bolt11 || invoiceResult.paymentRequest;
+        console.log("Generated invoice:", paymentRequest);
+      }
+      
+      console.log("Sending gift:", { 
         amount: giftAmount, 
         toUser: stream.hostUserId,
-        sparkAddress: stream.bolt12Offer,
+        paymentRequest,
       });
       
       toast.info("Preparing payment...");
       
-      // Parse the Spark Address
-      const parsed = await sdk.parse(stream.bolt12Offer);
-      console.log("Parsed Spark Address:", parsed);
+      // Parse the payment request
+      const parsed = await sdk.parse(paymentRequest);
+      console.log("Parsed payment request:", parsed);
 
-      // Prepare the payment - amount is in the Spark Address
+      // Prepare the payment
       const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest: stream.bolt12Offer,
+        paymentRequest,
       });
 
       console.log("Payment prepared:", prepareResponse);

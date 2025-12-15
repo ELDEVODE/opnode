@@ -4,7 +4,7 @@ import { useState } from "react";
 import { IoClose } from "react-icons/io5";
 import { FaBitcoin } from "react-icons/fa";
 import Image from "next/image";
-import { toast } from "sonner";
+import {toast } from "sonner";
 
 type GiftModalProps = {
   isOpen: boolean;
@@ -84,7 +84,11 @@ export default function GiftModal({
                 <input
                   type="number"
                   value={giftAmount}
-                  onChange={(e) => setGiftAmount(parseInt(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Keep the input value as-is while typing
+                    setGiftAmount(val === '' ? 0 : parseInt(val));
+                  }}
                   min="1"
                   disabled={isProcessing}
                   className="w-full bg-[#1A1A1F] border border-white/10 rounded-2xl px-4 py-3 pr-12 text-white placeholder:text-white/40 focus:outline-none focus:border-orange-500 disabled:opacity-50"
@@ -100,10 +104,10 @@ export default function GiftModal({
                     key={amount}
                     onClick={() => setGiftAmount(amount)}
                     disabled={isProcessing}
-                    className={`px-3 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 ${
+                    className={`px-3 py-2 rounded-2xl text-sm font-semibold transition disabled:opacity-50 ${
                       giftAmount === amount
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-white/5 hover:bg-white/10 text-white/80'
+                        ? 'bg-white text-black'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
                     }`}
                   >
                     {amount}
@@ -117,14 +121,14 @@ export default function GiftModal({
               <button
                 onClick={onClose}
                 disabled={isProcessing}
-                className="flex-1 rounded-full border border-white/10 bg-white/10 hover:bg-white/20 py-3.5 text-base font-semibold transition disabled:opacity-50"
+                className="flex-1 rounded-2xl bg-white/10 hover:bg-white/20 py-3.5 text-base font-semibold transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSend}
                 disabled={isProcessing || giftAmount <= 0}
-                className="flex-1 rounded-full bg-orange-500 hover:bg-orange-600 py-3.5 text-base font-bold text-white transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 rounded-2xl bg-white hover:bg-white/90 py-3.5 text-base font-bold text-black transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isProcessing ? (
                   <>
