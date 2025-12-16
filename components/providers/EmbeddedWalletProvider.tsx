@@ -302,20 +302,30 @@ export default function EmbeddedWalletProvider({
         if (bolt12Offer) {
           console.log("✅ BOLT12 offer generated:", bolt12Offer);
           
-          // Store it in user profile
-          const existingProfile = await convex.query(api.users.getProfile, { userId });
-          if (existingProfile) {
+          // Store it in user profile - ensure profile exists first
+          try {
+            // Ensure profile exists (creates default if needed)
+            console.log("📞 Ensuring profile exists...");
+            await convex.mutation(api.users.ensureProfile, { userId });
+            console.log("✅ Profile ensured");
+            
+            // Now save the BOLT12 offer
+            console.log("💾 Saving BOLT12 offer to profile...");
             await convex.mutation(api.users.updateBolt12Offer, {
               userId,
               bolt12Offer,
             });
             console.log("✅ BOLT12 offer saved to profile");
+          } catch (saveError) {
+            console.error("❌ Failed to save BOLT12 offer to profile:", saveError);
+            console.error("❌ Error details:", saveError instanceof Error ? saveError.message : saveError);
           }
         } else {
           console.warn("⚠️ BOLT12 offer not found in result:", result);
         }
       } catch (bolt12Error) {
         console.error("❌ Failed to generate BOLT12 offer:", bolt12Error);
+        console.error("❌ Error details:", bolt12Error instanceof Error ? bolt12Error.message : bolt12Error);
         // Continue anyway - not critical for wallet creation
       }
 
