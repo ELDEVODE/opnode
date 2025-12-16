@@ -160,12 +160,20 @@ export default function SendPaymentModal({
       console.error("Send error:", error);
       
       // Show user-friendly error messages
-      if (error.message?.toLowerCase().includes("insufficient funds")) {
+      const errorMessage = error.message || "";
+      
+      if (errorMessage.toLowerCase().includes("insufficient funds")) {
         toast.error("Insufficient funds. You need at least 10 sats to send payments (includes network fees).");
-      } else if (error.message?.toLowerCase().includes("invalid")) {
+      } else if (errorMessage.toLowerCase().includes("invalid")) {
         toast.error("Invalid payment request. Please check and try again.");
+      } else if (errorMessage.toLowerCase().includes("concurrency limit exceeded") || 
+                 errorMessage.includes("ResourceExhausted")) {
+        toast.error("Lightning network is busy. Please wait a moment and try again.");
+      } else if (errorMessage.toLowerCase().includes("cors") || 
+                 errorMessage.toLowerCase().includes("network")) {
+        toast.error("Network connection issue. Please check your connection and try again.");
       } else {
-        toast.error(error.message || "Failed to send payment");
+        toast.error(errorMessage || "Failed to send payment");
       }
       
       setIsSending(false);
