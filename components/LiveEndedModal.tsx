@@ -52,11 +52,11 @@ export default function LiveEndedModal({
           <div className="flex justify-center mb-8">
             <div className="w-32 h-32 flex items-center justify-center">
               <Image
-                src="https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=200&h=200&fit=crop"
+                src="/images/3d-glossy-shape 2.svg"
                 alt="Live Ended"
                 width={128}
                 height={128}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           </div>

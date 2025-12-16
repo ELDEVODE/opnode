@@ -1,6 +1,6 @@
 "use client";
 
-import { IoClose, IoMoon } from "react-icons/io5";
+import { IoClose, IoMoon, IoCopyOutline, IoCheckmark } from "react-icons/io5";
 import { TbCoinBitcoinFilled } from "react-icons/tb";
 import { GoChevronLeft } from "react-icons/go";
 import { FiFileText } from "react-icons/fi";
@@ -25,6 +25,7 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
   const [balanceSats, setBalanceSats] = useState<number | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const isReady = status === "ready" && !!sdk;
   
@@ -256,6 +257,35 @@ export default function WalletDrawer({ isOpen, onClose }: WalletDrawerProps) {
             )}
           </div>
         </div>
+
+        {/* Spark Address Card */}
+        {userProfile?.bolt12Offer && (
+          <div className="mb-8 rounded-[32px] bg-[#15151A] p-6 border border-white/5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-green-500 text-xl">🔐</span>
+              <p className="text-base font-medium text-white/60">Spark Address</p>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(userProfile.bolt12Offer!);
+                setCopied(true);
+                toast.success("Spark address copied!");
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="w-full flex items-center justify-between gap-3 rounded-2xl bg-[#1A1A1F] p-4 border border-white/10 hover:border-white/20 transition group"
+            >
+              <span className="font-mono text-sm text-white/60 truncate group-hover:text-white/80 transition">
+                {userProfile.bolt12Offer}
+              </span>
+              {copied ? (
+                <IoCheckmark className="h-5 w-5 text-green-500 flex-shrink-0" />
+              ) : (
+                <IoCopyOutline className="h-5 w- text-white/40 flex-shrink-0 group-hover:text-white/60 transition" />
+              )}
+            </button>
+            <p className="mt-3 text-xs text-white/30">Static payment address for receiving Lightning payments</p>
+          </div>
+        )}
       </section>
 
       {/* Payment Modals */}

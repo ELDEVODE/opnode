@@ -81,45 +81,16 @@ export default function StreamViewPage() {
   );
   
   
-  // Viewer count tracking - Poll Mux Data API for real-time counts
+  // Viewer count tracking - Use Convex viewers directly
   useEffect(() => {
-    if (!stream?.muxPlaybackId || !stream.isLive) {
+    if (!stream?.isLive) {
       setViewerCount(0);
       return;
     }
 
-    // Fetch viewer count from Mux Data API
-    const fetchViewerCount = async () => {
-      try {
-        const response = await fetch(
-          `/api/mux/viewers?playbackId=${stream.muxPlaybackId}`
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          const count = data.viewers || 0;
-          setViewerCount(count);
-          
-          // Also update Convex database for consistency
-          await updateViewers({ streamId, viewers: count }).catch(console.error);
-        }
-      } catch (error) {
-        console.error("Failed to fetch viewer count:", error);
-      }
-    };
-
-    // Initial fetch
-    fetchViewerCount();
-
-    // Poll every 15 seconds for live updates
-    viewerIntervalRef.current = setInterval(fetchViewerCount, 15000);
-
-    return () => {
-      if (viewerIntervalRef.current) {
-        clearInterval(viewerIntervalRef.current);
-      }
-    };
-  }, [stream?.muxPlaybackId, stream?.isLive, streamId]);
+    // Use the viewer count from Convex database
+    setViewerCount(stream.viewers || 0);
+  }, [stream?.viewers, stream?.isLive]);
   
   // Close emoji picker when clicking outside
   useEffect(() => {
