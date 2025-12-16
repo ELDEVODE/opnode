@@ -119,8 +119,8 @@ export default function StreamViewPage() {
   // Redirect host to broadcast page if they visit their own stream
   useEffect(() => {
     if (stream && userId && stream.hostUserId === userId) {
-      console.log("Host detected, redirecting to broadcast page...");
-      router.push("/stream-obs");
+      router.push(`/stream-obs?streamId=${streamId}`);
+      return;
     }
   }, [stream, userId, router]);
 
@@ -165,18 +165,13 @@ export default function StreamViewPage() {
       return;
     }
 
-    console.log("💰 Initiating gift payment:", { 
-      amount: giftAmount, 
-      toUser: stream.hostUserId,
-      streamId,
-    });
+
 
     setIsProcessingGift(true);
     let giftId: any = null;
     
     try {
       // Fetch the streamer's profile to get their BOLT12 offer
-      console.log("📞 Fetching streamer profile for payment address...");
       const streamerProfile = await convex.query(api.users.getProfile, {
         userId: stream.hostUserId
       });
@@ -187,24 +182,18 @@ export default function StreamViewPage() {
         return;
       }
 
-      console.log("✅ Streamer BOLT12 offer found:", streamerProfile.bolt12Offer);
       toast.info(`Sending ${giftAmount} sats...`);
 
       // Prepare payment to BOLT12 offer (Spark Address)
-      console.log("📞 Preparing payment to:", streamerProfile.bolt12Offer);
       const prepareResponse = await sdk.prepareSendPayment({
         paymentRequest: streamerProfile.bolt12Offer,
         amount: BigInt(giftAmount),
       });
 
-      console.log("✅ Payment prepared, sending...");
-
       // Send the payment
       const paymentResult = await sdk.sendPayment({
         prepareResponse,
       });
-
-      console.log("✅ Payment sent successfully:", paymentResult);
 
       const payment = paymentResult.payment as any;
       const paymentHash = payment.id || payment.paymentHash || payment.hash;

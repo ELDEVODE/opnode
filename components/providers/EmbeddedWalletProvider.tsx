@@ -41,7 +41,7 @@ const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL!;
 
 class EmbeddedSdkEventListener {
   onEvent(breezEvent: any) {
-    console.log("Breez event:", breezEvent);
+    // Handle Breez SDK events
     
     // Show toast notification for received payments
     if (breezEvent.type === "paymentSucceeded") {
@@ -60,7 +60,7 @@ class EmbeddedSdkEventListener {
           });
         });
         
-        console.log("✅ Incoming payment:", Math.floor(amountSats), "sats");
+
         
         // Record payment in Convex (async, non-blocking)
         this.recordIncomingPayment(Math.floor(amountSats), paymentHash).catch(err => {
@@ -71,7 +71,7 @@ class EmbeddedSdkEventListener {
     
     // Sync payment history when wallet syncs
     if (breezEvent.type === "synced") {
-      console.log("Wallet synced, checking for payment history updates...");
+
       this.syncAllPayments().catch(err => {
         console.error("Failed to sync payment history:", err);
       });
@@ -86,7 +86,7 @@ class EmbeddedSdkEventListener {
         }
         return value;
       };
-      console.log("Payment event:", JSON.stringify(breezEvent, replacer, 2));
+
     }
   }
   
@@ -96,7 +96,7 @@ class EmbeddedSdkEventListener {
       if (!userId) return;
       
       // This will be called when the SDK syncs
-      console.log("Auto-syncing payment history from network...");
+
     } catch (error) {
       console.error("Error syncing payments:", error);
     }
@@ -108,7 +108,6 @@ class EmbeddedSdkEventListener {
       // Get user ID from localStorage
       const userId = localStorage.getItem("wallet_user_id");
       if (!userId) {
-        console.warn("No user ID found, skipping payment recording");
         return;
       }
       
@@ -130,7 +129,7 @@ class EmbeddedSdkEventListener {
         message: `You received ${amountSats} sats`,
       });
       
-      console.log("✅ Payment recorded in history and notification created");
+
     } catch (error) {
       console.error("Error recording payment:", error);
     }
@@ -262,9 +261,8 @@ export default function EmbeddedWalletProvider({
       });
 
       // Get Lightning address from Breez (e.g., user@breez.technology)
-      console.log("🔍 Breez wallet info (new wallet):", info); // Debug
+      // Get Lightning address from Breez
       const lightningAddress = info.lnAddress || info.lightningAddress || null;
-      console.log("🔍 Lightning address found (new wallet):", lightningAddress); // Debug
       
       // Update user profile with Lightning address if available
       if (lightningAddress) {
@@ -277,56 +275,36 @@ export default function EmbeddedWalletProvider({
             });
           }
         } catch (error) {
-          console.warn("Failed to store Lightning address:", error);
           // Don't fail wallet creation if Lightning address update fails
         }
       }
 
       // Generate BOLT12 offer for receiving payments  
       try {
-        console.log("🔄 Generating BOLT12 offer...");
-        
-        // Generate BOLT12 offer (Spark Address) for receiving payments
         const result = await sdk.receivePayment({
           paymentMethod: {
             type: "sparkAddress",
           },
         }) as any;
         
-        console.log("🔍 BOLT12 offer result:", result);
-        console.log("🔍 Result keys:", Object.keys(result || {}));
-        
-        // Extract the offer from result
         const bolt12Offer = result?.paymentRequest || result?.destination || result?.address || null;
         
         if (bolt12Offer) {
-          console.log("✅ BOLT12 offer generated:", bolt12Offer);
-          
-          // Store it in user profile - ensure profile exists first
           try {
-            // Ensure profile exists (creates default if needed)
-            console.log("📞 Ensuring profile exists...");
             await convex.mutation(api.users.ensureProfile, { userId });
-            console.log("✅ Profile ensured");
             
-            // Now save the BOLT12 offer
-            console.log("💾 Saving BOLT12 offer to profile...");
             await convex.mutation(api.users.updateBolt12Offer, {
               userId,
               bolt12Offer,
             });
-            console.log("✅ BOLT12 offer saved to profile");
           } catch (saveError) {
             console.error("❌ Failed to save BOLT12 offer to profile:", saveError);
             console.error("❌ Error details:", saveError instanceof Error ? saveError.message : saveError);
           }
-        } else {
-          console.warn("⚠️ BOLT12 offer not found in result:", result);
         }
       } catch (bolt12Error) {
         console.error("❌ Failed to generate BOLT12 offer:", bolt12Error);
         console.error("❌ Error details:", bolt12Error instanceof Error ? bolt12Error.message : bolt12Error);
-        // Continue anyway - not critical for wallet creation
       }
 
       setWalletId(derivedWalletId);
@@ -377,9 +355,7 @@ export default function EmbeddedWalletProvider({
         setStatus("ready");
 
         // Migration: Get and store Lightning address if not already set
-        console.log("🔍 Breez wallet info:", info); // Debug: see all fields
         const lightningAddress = info.lnAddress || info.lightningAddress || null;
-        console.log("🔍 Lightning address found:", lightningAddress); // Debug
         
         if (lightningAddress) {
           try {
@@ -390,16 +366,10 @@ export default function EmbeddedWalletProvider({
                 userId,
                 lightningAddress,
               });
-              console.log("✅ Lightning address migrated:", lightningAddress);
-            } else if (userProfile?.lightningAddress) {
-              console.log("ℹ️ Lightning address already set:", userProfile.lightningAddress);
             }
           } catch (error) {
-            console.warn("Failed to migrate Lightning address:", error);
             // Don't fail wallet resume if migration fails
           }
-        } else {
-          console.warn("⚠️ No Lightning address found in Breez wallet info");
         }
       } catch (resumeError) {
         console.error(resumeError);
