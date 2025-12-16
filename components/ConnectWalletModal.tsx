@@ -16,6 +16,7 @@ import ChooseUsernameModal from "@/components/modals/ChooseUsernameModal";
 import CreatingProfileModal from "@/components/modals/CreatingProfileModal";
 import AddressCreatedModal from "@/components/modals/AddressCreatedModal";
 import ProfilePreviewModal from "@/components/modals/ProfilePreviewModal";
+import RecoverWalletModal from "@/components/modals/RecoverWalletModal";
 
 type ConnectWalletModalProps = {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export default function ConnectWalletModal({
   isOpen,
   onClose,
 }: ConnectWalletModalProps) {
-  const { status, connectNewWallet, resumeWallet, error } = useEmbeddedWallet();
+  const { status, connectNewWallet, resumeWallet, recoverFromSeed, error } = useEmbeddedWallet();
 
   // Zustand store
   const {
@@ -47,6 +48,8 @@ export default function ConnectWalletModal({
     bannerStorageId?: Id<"_storage">;
   }>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [showRecoverModal, setShowRecoverModal] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
   const splashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Only get userId after mount to avoid SSR issues
@@ -206,18 +209,35 @@ export default function ConnectWalletModal({
     if (isBusy) {
       return;
     }
+    
+    if (actionId === "resume") {
+      // Show recovery modal instead of directly resuming
+      setShowRecoverModal(true);
+      return;
+    }
+    
     setPendingAction(actionId);
     startConnectingSplash();
     try {
       if (actionId === "create") {
         await connectNewWallet();
-      } else {
-        await resumeWallet();
       }
     } catch (actionError) {
       console.error("Wallet action failed", actionError);
     } finally {
       setPendingAction(null);
+    }
+  };
+
+  const handleRecover = async (seedPhrase: string) => {
+    setIsRecovering(true);
+    try {
+      await recoverFromSeed(seedPhrase);
+      setShowRecoverModal(false);
+    } catch (error) {
+      console.error("Recovery failed:", error);
+    } finally {
+      setIsRecovering(false);
     }
   };
 
@@ -333,6 +353,14 @@ export default function ConnectWalletModal({
 
         {renderModalContent()}
       </div>
+
+      {/* Recovery Modal */}
+      <RecoverWalletModal
+        isOpen={showRecoverModal}
+        onClose={() => setShowRecoverModal(false)}
+        onRecover={handleRecover}
+        isProcessing={isRecovering}
+      />
     </div>
   );
 }

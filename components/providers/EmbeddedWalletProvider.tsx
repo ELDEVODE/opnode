@@ -28,6 +28,7 @@ type EmbeddedWalletContextValue = {
   resumeWallet: () => Promise<void>;
   disconnect: () => Promise<void>;
   refreshBalance: () => void;
+  recoverFromSeed: (seedPhrase: string) => Promise<void>;
   error?: string;
 };
 
@@ -322,6 +323,97 @@ export default function EmbeddedWalletProvider({
     }
   }, [convex, ensureUserId, hydrateSdk]);
 
+  const recoverFromSeed = useCallback(
+    async (seedPhrase: string) => {
+      setStatus("connecting");
+      setError(EMPTY_ERROR);
+      try {
+        const mnemonic = seedPhrase;
+        const sdk = await hydrateSdk(mnemonic);
+        const info = (await sdk.getInfo({ ensureSynced: false })) as any;
+        const derivedWalletId =
+          (info.nodeId as string | undefined) ??
+          (info.walletId as string | undefined) ??
+          fallbackId();
+        const derivedPublicKey =
+          (info.nodePubkey as string | undefined) ??
+          (info.walletPubkey as string | undefined) ??
+          derivedWalletId;
+
+        const userId = ensureUserId();
+
+        // Save wallet profile
+        await convex.mutation(api.wallets.upsertProfile, {
+          userId,
+          walletId: derivedWalletId,
+          publicKey: derivedPublicKey,
+          network: breezNetwork,
+          mnemonic,
+        });
+
+        // Get Lightning address from Breez (e.g., user@breez.technology)
+        const lightningAddress = info.lnAddress || info.lightningAddress || null;
+
+        // Update user profile with Lightning address if available
+        if (lightningAddress) {
+          try {
+            const existingProfile = await convex.query(api.users.getProfile, { userId });
+            if (existingProfile) {
+              await convex.mutation(api.users.updateLightningAddress, {
+                userId,
+                lightningAddress,
+              });
+            }
+          } catch (error) {
+            // Don't fail wallet creation if Lightning address update fails
+          }
+        }
+
+        // Generate BOLT12 offer for receiving payments
+        try {
+          const result = await sdk.receivePayment({
+            paymentMethod: {
+              type: "sparkAddress",
+            },
+          }) as any;
+
+          const bolt12Offer = result?.paymentRequest || result?.destination || result?.address || null;
+
+          if (bolt12Offer) {
+            try {
+              await convex.mutation(api.users.ensureProfile, { userId });
+
+              await convex.mutation(api.users.updateBolt12Offer, {
+                userId,
+                bolt12Offer,
+              });
+            } catch (saveError) {
+              console.error("❌ Failed to save BOLT12 offer to profile:", saveError);
+              console.error("❌ Error details:", saveError instanceof Error ? saveError.message : saveError);
+            }
+          }
+        } catch (bolt12Error) {
+          console.error("❌ Failed to generate BOLT12 offer:", bolt12Error);
+          console.error("❌ Error details:", bolt12Error instanceof Error ? bolt12Error.message : bolt12Error);
+        }
+
+        setWalletId(derivedWalletId);
+        setPublicKey(derivedPublicKey);
+        setStatus("ready");
+      } catch (recoverError) {
+        console.error(recoverError);
+        setError(
+          recoverError instanceof Error
+            ? recoverError.message
+            : "Failed to recover embedded wallet"
+        );
+        setStatus("error");
+        throw recoverError;
+      }
+    },
+    [convex, ensureUserId, hydrateSdk]
+  );
+
   const resumeWalletInternal = useCallback(
     async (options?: { allowNoWallet?: boolean }) => {
       setStatus("connecting");
@@ -425,6 +517,7 @@ export default function EmbeddedWalletProvider({
       resumeWallet,
       disconnect,
       refreshBalance,
+      recoverFromSeed,
       error,
     }),
     [
