@@ -17,6 +17,9 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import GiftModal from "@/components/GiftModal";
+import { ConvexHttpClient } from "convex/browser";
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 
 // Dynamic import for emoji picker (client-side only)
@@ -190,18 +193,10 @@ export default function StreamViewPage() {
       toast.error("Wallet not ready. Please try again.");
       return;
     }
-    
-    // Check if streamer has a payment address set up
-    if (!stream.bolt12Offer) {
-      toast.error("Streamer hasn't set up payment receiving yet. Please try again later.");
-      console.error("No payment address (bolt12Offer) found for stream:", stream._id);
-      return;
-    }
 
     console.log("💰 Initiating gift payment:", { 
       amount: giftAmount, 
       toUser: stream.hostUserId,
-      paymentAddress: stream.bolt12Offer,
       streamId,
     });
 
@@ -209,13 +204,29 @@ export default function StreamViewPage() {
     let giftId: any = null;
     
     try {
+      // Fetch the streamer's profile to get their BOLT12 offer
+      console.log("📞 Fetching streamer profile for payment address...");
+      const streamerProfile = await convex.query(api.users.getProfile, {
+        userId: stream.hostUserId
+      });
+
+      if (!streamerProfile?.bolt12Offer) {
+        toast.error("Streamer hasn't set up payment receiving yet. Please try again later.");
+        console.error("No BOLT12 offer found for streamer:", stream.hostUserId);
+        return;
+      }
+
+      console.log("✅ Streamer BOLT12 offer found:", streamerProfile.bolt12Offer);
       toast.info(`Sending ${giftAmount} sats...`);
 
       // Prepare payment - works for Bitcoin address, Spark address, or invoices
-      console.log("📞 Preparing payment to:", stream.bolt12Offer);
+      console.log("📞 Preparing payment to:", streamerProfile.bolt12Offer);
       const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest: stream.bolt12Offer,
-        amount: BigInt(giftAmount),
+        destination: streamerProfile.bolt12Offer,
+        amount: {
+          type: 'bitcoin',
+          receiverAmountSat: BigInt(giftAmount),
+        },
       });
 
       console.log("✅ Payment prepared, sending...");

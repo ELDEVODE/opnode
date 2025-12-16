@@ -112,6 +112,7 @@ export default function Navbar() {
                       avatarUrl: userProfile.avatarUrl,
                       bannerUrl: userProfile.bannerUrl,
                       lightningAddress: userProfile.lightningAddress,
+                      bolt12Offer: userProfile.bolt12Offer,
                     }
                   : null
               }

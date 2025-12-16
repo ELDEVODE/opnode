@@ -160,6 +160,8 @@ export default function MobileHeader() {
                       displayName: userProfile.displayName,
                       avatarUrl: userProfile.avatarUrl,
                       bannerUrl: userProfile.bannerUrl,
+                      lightningAddress: userProfile.lightningAddress,
+                      bolt12Offer: userProfile.bolt12Offer,
                     }
                   : null
               }
