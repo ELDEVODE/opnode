@@ -110,11 +110,18 @@ export default function SendPaymentModal({
     setStep("sending");
 
     try {
+      // Extract actual payment amount from preparedPayment
+      const paymentAmount = 
+        preparedPayment.recipientAmountSats || 
+        (preparedPayment.paymentMethod?.type === "bolt11Invoice" 
+          ? Number(preparedPayment.paymentMethod.recipientAmountSats || 0)
+          : parseInt(amount) || 0);
+
       // Create pending payment record
       const paymentId = await createPendingPayment({
         userId,
         type: "sent",
-        amountSats: parseInt(amount) || 0,
+        amountSats: paymentAmount,
         paymentRequest: paymentInput,
       });
 
@@ -139,7 +146,8 @@ export default function SendPaymentModal({
         });
       }
 
-      toast.success(`⚡ Payment sent! ${parseInt(amount)} sats`);
+      toast.success(`⚡ Payment sent! ${paymentAmount} sats`);
+
 
       // Refresh balance across all components
       refreshBalance();
@@ -292,12 +300,30 @@ export default function SendPaymentModal({
               <div className="bg-[#1A1A1F] rounded-2xl p-4 border border-white/10">
                 <div className="flex justify-between mb-2">
                   <span className="text-white/60">Amount:</span>
-                  <span className="font-bold">{amount} sats</span>
+                  <span className="font-bold">
+                    {(() => {
+                      // Extract amount from preparedPayment or amount state
+                      const paymentAmount = 
+                        preparedPayment.recipientAmountSats || 
+                        (preparedPayment.paymentMethod?.type === "bolt11Invoice" 
+                          ? Number(preparedPayment.paymentMethod.recipientAmountSats || 0)
+                          : parseInt(amount) || 0);
+                      return paymentAmount;
+                    })()} sats
+                  </span>
                 </div>
                 <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
                   <span className="text-white/80 font-semibold">Total:</span>
                   <span className="font-bold text-orange-500">
-                    {parseInt(amount)} sats
+                    {(() => {
+                      // Extract amount from preparedPayment or amount state
+                      const paymentAmount = 
+                        preparedPayment.recipientAmountSats || 
+                        (preparedPayment.paymentMethod?.type === "bolt11Invoice" 
+                          ? Number(preparedPayment.paymentMethod.recipientAmountSats || 0)
+                          : parseInt(amount) || 0);
+                      return paymentAmount;
+                    })()} sats
                   </span>
                 </div>
               </div>
