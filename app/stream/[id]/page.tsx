@@ -191,50 +191,35 @@ export default function StreamViewPage() {
       return;
     }
     
-    // TODO: Re-enable Spark Address once we confirm it works
-    // For now, try direct payment to see what happens
-    console.log("Stream data:", stream);
-    console.log("Spark Address (bolt12Offer):", stream.bolt12Offer);
+    // Check if streamer has set up payment receiving
+    if (!stream.bolt12Offer) {
+      toast.error("Streamer hasn't set up payment receiving yet. Please try again later.");
+      console.error("No Spark Address (bolt12Offer) found for stream:", stream._id);
+      return;
+    }
+
+    console.log("Sending gift:", { 
+      amount: giftAmount, 
+      toUser: stream.hostUserId,
+      sparkAddress: stream.bolt12Offer,
+    });
 
     setIsProcessingGift(true);
-    
     let giftId: any = null;
     
     try {
-      console.log("Sending gift:", { 
-        amount: giftAmount, 
-        toUser: stream.hostUserId,
-      });
-      
-      toast.info("Generating payment request...");
-
-      // Request invoice from streamer via API
-      const invoiceResponse = await fetch('/api/generate-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: stream.hostUserId,
-          amountSats: giftAmount,
-          description: `Gift from ${myProfile?.username || 'viewer'}`
-        })
-      });
-
-      if (!invoiceResponse.ok) {
-        throw new Error('Failed to get payment request from streamer');
-      }
-
-      const { invoice } = await invoiceResponse.json();
-      console.log("Received invoice from streamer");
-      
       toast.info(`Sending ${giftAmount} sats...`);
 
-      // Prepare and send payment to invoice
+      // Send payment to Spark Address (BOLT12 offer)
+      // Step 1: Prepare the payment with the Spark Address and amount
       const prepareResponse = await sdk.prepareSendPayment({
-        paymentRequest: invoice,
+        paymentRequest: stream.bolt12Offer,
+        amount: BigInt(giftAmount), // Amount in sats
       });
 
+      // Step 2: Execute the payment
       const paymentResult = await sdk.sendPayment({
-        prepareResponse
+        prepareResponse,
       });
 
       console.log("✅ Payment sent successfully:", paymentResult);
@@ -252,7 +237,6 @@ export default function StreamViewPage() {
         giftType: "gift",
         paymentHash,
       });
-
       
       // Update gift status to completed
       if (giftId) {
