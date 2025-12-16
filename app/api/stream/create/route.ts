@@ -48,9 +48,9 @@ async function encryptSecret(plainText: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, title, description, tags, category, thumbnailStorageId } = body;
+    const { userId, title, description, tags, category, thumbnailStorageId, bolt12Offer } = body;
 
-    console.log("Stream creation request:", { userId, title, category });
+    console.log("Stream creation request:", { userId, title, category, hasBolt12Offer: !!bolt12Offer });
 
     if (!userId || !title) {
       console.error("Missing required fields:", { userId: !!userId, title: !!title });
@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
       tags: tags || [],
       category: category || "Live",
       thumbnailStorageId,
+      bolt12Offer, // Store Spark Address immediately if provided
     });
 
     console.log(`Created Convex stream: ${streamId}`);

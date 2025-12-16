@@ -220,6 +220,33 @@ export default function StreamPage() {
 
     setIsCreatingStream(true);
     try {
+      let sparkAddress: string | null = null;
+      
+      // Generate Spark Address for receiving gifts BEFORE creating the stream
+      if (status === 'ready' && sdk) {
+        try {
+          const result = await sdk.receivePayment({
+            paymentMethod: {
+              type: "sparkAddress",
+            },
+          }) as any;
+          
+          console.log("🔍 Spark Address result:", result);
+          
+          // Extract Spark Address from result
+          sparkAddress = result.destination || result.address || result.sparkAddress || null;
+          
+          if (sparkAddress) {
+            console.log("✅ Spark Address generated:", sparkAddress);
+          } else {
+            console.warn("⚠️ Spark Address not found in result:", result);
+          }
+        } catch (offerError) {
+          console.warn("Failed to generate Spark Address:", offerError);
+          // Continue without address - gifts just won't work
+        }
+      }
+
       const response = await fetch("/api/stream/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -229,6 +256,7 @@ export default function StreamPage() {
           description: "Live stream",
           tags: streamMetadata.tags,
           category: streamMetadata.category,
+          bolt12Offer: sparkAddress, // Include Spark Address in stream creation
         }),
       });
 
@@ -259,39 +287,12 @@ export default function StreamPage() {
     if (!streamSessionId) return;
 
     try {
-      let sparkAddress: string | null = null;
-      
-      // Generate Spark Address for receiving gifts
-      if (status === 'ready' && sdk) {
-        try {
-          const result = await sdk.receivePayment({
-            paymentMethod: {
-              type: "sparkAddress",
-            },
-          }) as any;
-          
-          console.log("🔍 Spark Address result:", result);
-          
-          // Extract Spark Address from result
-          sparkAddress = result.destination || result.address || result.sparkAddress || null;
-          
-          if (sparkAddress) {
-            console.log("✅ Spark Address generated:", sparkAddress);
-          } else {
-            console.warn("⚠️ Spark Address not found in result:", result);
-          }
-        } catch (offerError) {
-          console.warn("Failed to generate Spark Address:", offerError);
-          // Continue without address - gifts just won't work
-        }
-      }
-
+      // Spark Address was already generated and stored during stream creation
       const response = await fetch("/api/stream/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           streamId: streamSessionId,
-          bolt12Offer: sparkAddress // Send as bolt12Offer for backend compatibility
         }),
       });
 

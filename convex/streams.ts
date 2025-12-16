@@ -1,7 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-// Create a new stream
 export const createStream = mutation({
   args: {
     hostUserId: v.string(),
@@ -10,6 +9,7 @@ export const createStream = mutation({
     tags: v.array(v.string()),
     category: v.string(),
     thumbnailStorageId: v.optional(v.id("_storage")),
+    bolt12Offer: v.optional(v.string()), // Spark Address for receiving gifts
   },
   handler: async (ctx, args) => {
     const streamId = await ctx.db.insert("streams", {
@@ -19,6 +19,7 @@ export const createStream = mutation({
       tags: args.tags,
       category: args.category,
       thumbnailStorageId: args.thumbnailStorageId,
+      bolt12Offer: args.bolt12Offer, // Store Spark Address immediately
       isLive: false,
       viewers: 0,
       totalViews: 0,
