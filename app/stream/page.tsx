@@ -225,27 +225,45 @@ export default function StreamPage() {
       // Generate Spark Address for receiving gifts BEFORE creating the stream
       if (status === 'ready' && sdk) {
         try {
+          console.log("🔄 Attempting to generate Spark Address...");
+          
           const result = await sdk.receivePayment({
             paymentMethod: {
               type: "sparkAddress",
             },
           }) as any;
           
-          console.log("🔍 Spark Address result:", result);
+          console.log("🔍 Spark Address raw result:", result);
+          console.log("🔍 Result keys:", Object.keys(result || {}));
+          console.log("🔍 Result type:", typeof result);
           
-          // Extract Spark Address from result
-          sparkAddress = result.destination || result.address || result.sparkAddress || null;
+          // Try multiple possible field names
+          sparkAddress = result?.destination || 
+                        result?.address || 
+                        result?.sparkAddress || 
+                        result?.offer ||
+                        result?.bolt12 ||
+                        result?.paymentRequest ||
+                        null;
           
           if (sparkAddress) {
-            console.log("✅ Spark Address generated:", sparkAddress);
+            console.log("✅ Spark Address generated successfully!");
+            console.log("✅ Spark Address:", sparkAddress);
           } else {
-            console.warn("⚠️ Spark Address not found in result:", result);
+            console.warn("⚠️ Spark Address not found in result");
+            console.warn("⚠️ Full result object:", JSON.stringify(result, null, 2));
           }
-        } catch (offerError) {
-          console.warn("Failed to generate Spark Address:", offerError);
-          // Continue without address - gifts just won't work
+        } catch (offerError: any) {
+          console.error("❌ Failed to generate Spark Address:", offerError);
+          console.error("❌ Error message:", offerError?.message);
+          console.error("❌ Error stack:", offerError?.stack);
+          // Continue without address - we'll warn user but stream creation will proceed
         }
+      } else {
+        console.warn("⚠️ Cannot generate Spark Address - wallet not ready", { status, hasSdk: !!sdk });
       }
+
+      console.log("📡 Creating stream with sparkAddress:", sparkAddress ? "✅ Present" : "❌ Missing");
 
       const response = await fetch("/api/stream/create", {
         method: "POST",
@@ -274,6 +292,11 @@ export default function StreamPage() {
         "Share URL:",
         `${window.location.origin}/stream/${data.streamId}`
       );
+      
+      // Warn user if Spark Address wasn't generated
+      if (!sparkAddress) {
+        console.warn("⚠️ Stream created without Spark Address - gifts will not work");
+      }
     } catch (error) {
       console.error("Error creating stream:", error);
       alert("Failed to create stream. Please try again.");
