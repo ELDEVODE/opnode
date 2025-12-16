@@ -50,10 +50,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { userId, title, description, tags, category, thumbnailStorageId, bolt12Offer } = body;
 
-    console.log("Stream creation request:", { userId, title, category, hasBolt12Offer: !!bolt12Offer });
+    console.log("📥 Stream creation request received");
+    console.log("  - userId:", userId);
+    console.log("  - title:", title);
+    console.log("  - category:", category);
+    console.log("  - bolt12Offer present:", !!bolt12Offer);
+    console.log("  - bolt12Offer value:", bolt12Offer || "NOT PROVIDED");
 
     if (!userId || !title) {
-      console.error("Missing required fields:", { userId: !!userId, title: !!title });
+      console.error("❌ Missing required fields:", { userId: !!userId, title: !!title });
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -64,6 +69,7 @@ export async function POST(req: NextRequest) {
     console.log(`📺 Creating new stream for user ${userId}`);
 
     // Create stream in Convex first
+    console.log("📤 Sending to Convex with bolt12Offer:", bolt12Offer || "NULL");
     const streamId = await convex.mutation(api.streams.createStream, {
       hostUserId: userId,
       title,
@@ -74,7 +80,7 @@ export async function POST(req: NextRequest) {
       bolt12Offer, // Store Spark Address immediately if provided
     });
 
-    console.log(`Created Convex stream: ${streamId}`);
+    console.log(`✅ Created Convex stream: ${streamId}`);
 
     // Create Mux live stream
     const muxStream = await createLiveStream({

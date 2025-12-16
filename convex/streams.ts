@@ -12,6 +12,10 @@ export const createStream = mutation({
     bolt12Offer: v.optional(v.string()), // Spark Address for receiving gifts
   },
   handler: async (ctx, args) => {
+    console.log("💾 Convex createStream called");
+    console.log("  - bolt12Offer present:", !!args.bolt12Offer);
+    console.log("  - bolt12Offer:", args.bolt12Offer || "NULL");
+    
     const streamId = await ctx.db.insert("streams", {
       hostUserId: args.hostUserId,
       title: args.title,
@@ -27,6 +31,9 @@ export const createStream = mutation({
       totalGifts: 0,
       createdAt: Date.now(),
     });
+
+    console.log("✅ Stream created in DB with ID:", streamId);
+    console.log("✅ bolt12Offer stored:", !!args.bolt12Offer);
 
     return streamId;
   },
