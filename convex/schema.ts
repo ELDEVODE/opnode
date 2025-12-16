@@ -163,4 +163,21 @@ export default defineSchema({
     status: v.string(), // "pending" | "reviewed" | "resolved"
     createdAt: v.number(),
   }).index("by_status", ["status"]),
+
+  // Invoice requests for gift payments
+  invoiceRequests: defineTable({
+    streamId: v.id("streams"),
+    viewerUserId: v.string(),
+    amountSats: v.number(),
+    description: v.string(),
+    status: v.string(), // "pending" | "fulfilled" | "expired" | "paid"
+    invoice: v.optional(v.string()), // BOLT11 invoice (set when fulfilled)
+    paymentHash: v.optional(v.string()),
+    createdAt: v.number(),
+    expiresAt: v.number(), // Request expires after 60 seconds
+    fulfilledAt: v.optional(v.number()),
+    paidAt: v.optional(v.number()),
+  })
+    .index("by_stream", ["streamId", "status", "createdAt"])
+    .index("by_status", ["status", "createdAt"]),
 });

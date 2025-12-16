@@ -220,50 +220,75 @@ export default function StreamPage() {
 
     setIsCreatingStream(true);
     try {
-      let sparkAddress: string | null = null;
+      let paymentAddress: string | null = null;
+      let addressType: 'bitcoin' | 'spark' | null = null;
       
-      // Generate Spark Address for receiving gifts BEFORE creating the stream
+      // Generate payment address for receiving gifts BEFORE creating the stream
+      // Try both Spark (preferred) and Bitcoin addresses
       if (status === 'ready' && sdk) {
+        // Try Spark address first (better for Lightning)
         try {
           console.log("🔄 Attempting to generate Spark Address...");
           
-          const result = await sdk.receivePayment({
+          const sparkResult = await sdk.receivePayment({
             paymentMethod: {
               type: "sparkAddress",
             },
           }) as any;
           
-          console.log("🔍 Spark Address raw result:", result);
-          console.log("🔍 Result keys:", Object.keys(result || {}));
-          console.log("🔍 Result type:", typeof result);
+          console.log("🔍 Spark Address result:", sparkResult);
+          console.log("🔍 Spark result keys:", Object.keys(sparkResult || {}));
           
-          // Try multiple possible field names
-          sparkAddress = result?.destination || 
-                        result?.address || 
-                        result?.sparkAddress || 
-                        result?.offer ||
-                        result?.bolt12 ||
-                        result?.paymentRequest ||
-                        null;
+          // Get the payment request from the result
+          paymentAddress = sparkResult?.paymentRequest || sparkResult?.destination || sparkResult?.address || null;
           
-          if (sparkAddress) {
+          if (paymentAddress) {
+            addressType = 'spark';
             console.log("✅ Spark Address generated successfully!");
-            console.log("✅ Spark Address:", sparkAddress);
+            console.log("✅ Spark Address:", paymentAddress);
           } else {
             console.warn("⚠️ Spark Address not found in result");
-            console.warn("⚠️ Full result object:", JSON.stringify(result, null, 2));
+            console.warn("⚠️ Full Spark result:", JSON.stringify(sparkResult, null, 2));
           }
-        } catch (offerError: any) {
-          console.error("❌ Failed to generate Spark Address:", offerError);
-          console.error("❌ Error message:", offerError?.message);
-          console.error("❌ Error stack:", offerError?.stack);
-          // Continue without address - we'll warn user but stream creation will proceed
+        } catch (sparkError: any) {
+          console.warn("⚠️ Spark Address generation failed, trying Bitcoin address...");
+          console.warn("⚠️ Error:", sparkError?.message);
+        }
+        
+        // If Spark failed, try Bitcoin address
+        if (!paymentAddress) {
+          try {
+            console.log("🔄 Attempting to generate Bitcoin Address...");
+            
+            const bitcoinResult = await sdk.receivePayment({
+              paymentMethod: {
+                type: "bitcoinAddress",
+              },
+            }) as any;
+            
+            console.log("🔍 Bitcoin Address result:", bitcoinResult);
+            console.log("🔍 Bitcoin result keys:", Object.keys(bitcoinResult || {}));
+            
+            paymentAddress = bitcoinResult?.paymentRequest || bitcoinResult?.address || null;
+            
+            if (paymentAddress) {
+              addressType = 'bitcoin';
+              console.log("✅ Bitcoin Address generated successfully!");
+              console.log("✅ Bitcoin Address:", paymentAddress);
+            } else {
+              console.error("❌ Bitcoin Address not found in result");
+              console.error("❌ Full Bitcoin result:", JSON.stringify(bitcoinResult, null, 2));
+            }
+          } catch (bitcoinError: any) {
+            console.error("❌ Bitcoin Address generation also failed");
+            console.error("❌ Error:", bitcoinError?.message);
+          }
         }
       } else {
-        console.warn("⚠️ Cannot generate Spark Address - wallet not ready", { status, hasSdk: !!sdk });
+        console.warn("⚠️ Cannot generate payment address - wallet not ready", { status, hasSdk: !!sdk });
       }
 
-      console.log("📡 Creating stream with sparkAddress:", sparkAddress ? "✅ Present" : "❌ Missing");
+      console.log("📡 Creating stream with payment address:", paymentAddress ? `✅ ${addressType}` : "❌ None");
 
       const response = await fetch("/api/stream/create", {
         method: "POST",
@@ -274,7 +299,7 @@ export default function StreamPage() {
           description: "Live stream",
           tags: streamMetadata.tags,
           category: streamMetadata.category,
-          bolt12Offer: sparkAddress, // Include Spark Address in stream creation
+          bolt12Offer: paymentAddress, // Store payment address (Bitcoin or Spark)
         }),
       });
 
@@ -293,9 +318,11 @@ export default function StreamPage() {
         `${window.location.origin}/stream/${data.streamId}`
       );
       
-      // Warn user if Spark Address wasn't generated
-      if (!sparkAddress) {
-        console.warn("⚠️ Stream created without Spark Address - gifts will not work");
+      // Warn user if payment address wasn't generated
+      if (!paymentAddress) {
+        console.warn("⚠️ Stream created without payment address - gifts will not work");
+      } else {
+        console.log(`✅ Stream ready to receive payments via ${addressType}`);
       }
     } catch (error) {
       console.error("Error creating stream:", error);

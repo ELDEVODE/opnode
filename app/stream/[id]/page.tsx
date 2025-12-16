@@ -191,17 +191,18 @@ export default function StreamViewPage() {
       return;
     }
     
-    // Check if streamer has set up payment receiving
+    // Check if streamer has a payment address set up
     if (!stream.bolt12Offer) {
       toast.error("Streamer hasn't set up payment receiving yet. Please try again later.");
-      console.error("No Spark Address (bolt12Offer) found for stream:", stream._id);
+      console.error("No payment address (bolt12Offer) found for stream:", stream._id);
       return;
     }
 
-    console.log("Sending gift:", { 
+    console.log("💰 Initiating gift payment:", { 
       amount: giftAmount, 
       toUser: stream.hostUserId,
-      sparkAddress: stream.bolt12Offer,
+      paymentAddress: stream.bolt12Offer,
+      streamId,
     });
 
     setIsProcessingGift(true);
@@ -210,14 +211,16 @@ export default function StreamViewPage() {
     try {
       toast.info(`Sending ${giftAmount} sats...`);
 
-      // Send payment to Spark Address (BOLT12 offer)
-      // Step 1: Prepare the payment with the Spark Address and amount
+      // Prepare payment - works for Bitcoin address, Spark address, or invoices
+      console.log("📞 Preparing payment to:", stream.bolt12Offer);
       const prepareResponse = await sdk.prepareSendPayment({
         paymentRequest: stream.bolt12Offer,
-        amount: BigInt(giftAmount), // Amount in sats
+        amount: BigInt(giftAmount),
       });
 
-      // Step 2: Execute the payment
+      console.log("✅ Payment prepared, sending...");
+
+      // Send the payment
       const paymentResult = await sdk.sendPayment({
         prepareResponse,
       });
