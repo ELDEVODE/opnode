@@ -282,6 +282,43 @@ export default function EmbeddedWalletProvider({
         }
       }
 
+      // Generate BOLT12 offer for receiving payments  
+      try {
+        console.log("🔄 Generating BOLT12 offer...");
+        
+        // Generate BOLT12 offer (Spark Address) for receiving payments
+        const result = await sdk.receivePayment({
+          paymentMethod: {
+            type: "sparkAddress",
+          },
+        }) as any;
+        
+        console.log("🔍 BOLT12 offer result:", result);
+        console.log("🔍 Result keys:", Object.keys(result || {}));
+        
+        // Extract the offer from result
+        const bolt12Offer = result?.paymentRequest || result?.destination || result?.address || null;
+        
+        if (bolt12Offer) {
+          console.log("✅ BOLT12 offer generated:", bolt12Offer);
+          
+          // Store it in user profile
+          const existingProfile = await convex.query(api.users.getProfile, { userId });
+          if (existingProfile) {
+            await convex.mutation(api.users.updateBolt12Offer, {
+              userId,
+              bolt12Offer,
+            });
+            console.log("✅ BOLT12 offer saved to profile");
+          }
+        } else {
+          console.warn("⚠️ BOLT12 offer not found in result:", result);
+        }
+      } catch (bolt12Error) {
+        console.error("❌ Failed to generate BOLT12 offer:", bolt12Error);
+        // Continue anyway - not critical for wallet creation
+      }
+
       setWalletId(derivedWalletId);
       setPublicKey(derivedPublicKey);
       setStatus("ready");

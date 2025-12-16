@@ -16,6 +16,7 @@ type ProfileDropdownProps = {
     avatarUrl?: string | null;
     bannerUrl?: string | null;
     lightningAddress?: string | null;
+    bolt12Offer?: string | null;
   } | null;
 };
 
@@ -123,6 +124,14 @@ export default function ProfileDropdown({
               <div className="mt-2 flex items-center gap-2 text-xs text-white/60">
                 <span className="text-orange-500">⚡</span>
                 <span className="font-mono truncate">{profile.lightningAddress}</span>
+              </div>
+            )}
+            {profile.bolt12Offer && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-white/60">
+                <span className="text-green-500">🔐</span>
+                <span className="font-mono truncate" title={profile.bolt12Offer}>
+                  {profile.bolt12Offer.substring(0, 30)}...
+                </span>
               </div>
             )}
           </div>

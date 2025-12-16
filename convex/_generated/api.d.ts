@@ -10,6 +10,7 @@
 
 import type * as chat from "../chat.js";
 import type * as http from "../http.js";
+import type * as invoices from "../invoices.js";
 import type * as moderation from "../moderation.js";
 import type * as payments from "../payments.js";
 import type * as settings from "../settings.js";
@@ -26,6 +27,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   http: typeof http;
+  invoices: typeof invoices;
   moderation: typeof moderation;
   payments: typeof payments;
   settings: typeof settings;

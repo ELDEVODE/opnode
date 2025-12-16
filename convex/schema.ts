@@ -88,6 +88,7 @@ export default defineSchema({
     totalEarnings: v.number(), // in sats
     isVerified: v.boolean(),
     lightningAddress: v.optional(v.string()), // username@domain.com
+    bolt12Offer: v.optional(v.string()), // Static BOLT12 offer for receiving payments
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"])

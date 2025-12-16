@@ -68,6 +68,31 @@ export const updateLightningAddress = mutation({
   },
 });
 
+// Update BOLT12 offer for user profile
+export const updateBolt12Offer = mutation({
+  args: {
+    userId: v.string(),
+    bolt12Offer: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    if (!existing) {
+      throw new Error("User profile not found");
+    }
+
+    await ctx.db.patch(existing._id, {
+      bolt12Offer: args.bolt12Offer,
+    });
+
+    console.log("✅ BOLT12 offer updated for user:", args.userId);
+    return existing._id;
+  },
+});
+
 // Generate upload URL for profile images
 export const generateUploadUrl = mutation({
   args: {},
