@@ -219,14 +219,11 @@ export default function StreamViewPage() {
       console.log("✅ Streamer BOLT12 offer found:", streamerProfile.bolt12Offer);
       toast.info(`Sending ${giftAmount} sats...`);
 
-      // Prepare payment - works for Bitcoin address, Spark address, or invoices
+      // Prepare payment to BOLT12 offer (Spark Address)
       console.log("📞 Preparing payment to:", streamerProfile.bolt12Offer);
       const prepareResponse = await sdk.prepareSendPayment({
-        destination: streamerProfile.bolt12Offer,
-        amount: {
-          type: 'bitcoin',
-          receiverAmountSat: BigInt(giftAmount),
-        },
+        paymentRequest: streamerProfile.bolt12Offer,
+        amount: BigInt(giftAmount),
       });
 
       console.log("✅ Payment prepared, sending...");
